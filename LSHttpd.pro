@@ -5,8 +5,9 @@
 #-------------------------------------------------
 
 QT       += network
-
 QT       -= gui
+
+CONFIG += c++11
 
 TARGET = LSHttpd
 TEMPLATE = lib
@@ -14,11 +15,14 @@ TEMPLATE = lib
 DEFINES += LSHTTPD_LIBRARY
 
 SOURCES += lshttpd.cpp \
-    lshttpdprivate.cpp
+    lshttpdprivate.cpp \
+    http-parser/http_parser.c
 
 HEADERS += lshttpd.h\
         lshttpd_global.h \
-    lshttpdprivate.h
+        lshttpdprivate.h \
+        http-parser/http_parser.h
+
 
 unix {
     target.path = /usr/lib

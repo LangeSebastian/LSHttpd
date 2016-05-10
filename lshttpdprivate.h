@@ -3,17 +3,42 @@
 
 #include <QTcpServer>
 #include <QObject>
+#include <QSslSocket>
+#include <QList>
+#include <QMap>
+
+#include <http-parser/http_parser.h>
+
+struct LSHttpd_Connection_T {
+    http_parser parser;
+    http_parser_settings settings;
+    QByteArray data;
+};
+
+
+class LSHttpd;
 
 class LSHttpdPrivate : public QTcpServer
 {
 public:
     LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q);
+    ~LSHttpdPrivate();
 
-    // QTcpServer interface
+    static instance();
+
+    static int onParserMessageCompleteWrapper(http_parser *parser);
+    int onParserMessageComplete(QSslSocket *socket, http_parser *parser);
+
+protected slots:
+    void readData();
+
 protected:
     LSHttpd *q_ptr;
+    QMap<QSslSocket*, LSHttpd_Connection_T*> m_sslSocketMap;
 
     void incomingConnection(qintptr handle) Q_DECL_OVERRIDE;
+    void disconnectSocket(QSslSocket* socket);
+
 };
 
 #endif // LSHTTPDPRIVATE_H
