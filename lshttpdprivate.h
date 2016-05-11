@@ -26,6 +26,8 @@ public:
 
     static instance();
 
+    static int onNotificationNull(http_parser* p);
+    static int onDataNull(http_parser* p, const char*at, size_t length);
     static int onParserMessageCompleteWrapper(http_parser *parser);
     int onParserMessageComplete(QSslSocket *socket, http_parser *parser);
 

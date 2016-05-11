@@ -1,6 +1,8 @@
 #include "lshttpdprivate.h"
 #include "lshttpd.h"
 
+#include <QSslConfiguration>
+
 struct LSHttpd_Parser_Mapping {
     LSHttpdPrivate* obj;
     QSslSocket* socket;
@@ -18,6 +20,18 @@ LSHttpdPrivate::~LSHttpdPrivate()
     m_sslSocketMap.clear();
 }
 
+int LSHttpdPrivate::onNotificationNull(http_parser *p)
+{
+    qDebug()<<"Notify";
+    return 0;
+}
+
+int LSHttpdPrivate::onDataNull(http_parser *p, const char *at, size_t length)
+{
+    qDebug()<<"Data:"<<QByteArray(at,length);
+    return 0;
+}
+
 int LSHttpdPrivate::onParserMessageCompleteWrapper(http_parser *parser)
 {
     if(LSHTTPDPARSERMAP.contains(parser))
@@ -31,7 +45,15 @@ int LSHttpdPrivate::onParserMessageCompleteWrapper(http_parser *parser)
 int LSHttpdPrivate::onParserMessageComplete(QSslSocket *socket, http_parser *parser)
 {
     //Verarbeiten der Anfrage
-    socket->write("HTTP/1.1 404 Not Found\r\n\r\n\0");
+    //socket->write("HTTP/1.1 404 Not Found\r\n\r\n");
+    //socket->write("HTTP/1.1 200\r\n<html><head><Title>Test</title></head><body><b>test</b></body></html>\r\n\r\n");
+    QByteArray ba = "HTTP/1.1 404 Not Found\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 103\r\n"
+                    "\r\n"
+                    "<!DOCTYPE html><html lang=en><title>Error 404 (Not Found)!!1</title>You should not read this...</html>";
+    socket->write(ba);
+
     disconnectSocket(socket);
     return 0;
 }
@@ -39,9 +61,21 @@ int LSHttpdPrivate::onParserMessageComplete(QSslSocket *socket, http_parser *par
 void LSHttpdPrivate::incomingConnection(qintptr handle)
 {
     QSslSocket* s = new QSslSocket;
-    if(s->setSocketDescriptor(handle))
+    s->setSslConfiguration(QSslConfiguration::defaultConfiguration());
+    s->setLocalCertificate("server.crt");
+    s->setPrivateKey("server.key");
+    if(Q_LIKELY(s->setSocketDescriptor(handle)))
     {
         LSHttpd_Connection_T *c = new LSHttpd_Connection_T;
+        c->settings.on_message_begin = onNotificationNull;
+        c->settings.on_header_field = onDataNull;
+        c->settings.on_header_value = onDataNull;
+        c->settings.on_url = onDataNull;
+        c->settings.on_body = onDataNull;
+        c->settings.on_status = onDataNull;
+        c->settings.on_chunk_complete = onNotificationNull;
+        c->settings.on_chunk_header = onNotificationNull;
+        c->settings.on_headers_complete = onNotificationNull;
         c->settings.on_message_complete = onParserMessageCompleteWrapper;
         http_parser_init(&c->parser,HTTP_REQUEST);
 
@@ -73,6 +107,7 @@ void LSHttpdPrivate::incomingConnection(qintptr handle)
             }
             delete s;
         });
+        s->startServerEncryption();
     }else{
         delete s;
     }
