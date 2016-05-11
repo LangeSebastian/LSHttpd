@@ -62,8 +62,8 @@ void LSHttpdPrivate::incomingConnection(qintptr handle)
 {
     QSslSocket* s = new QSslSocket;
     s->setSslConfiguration(QSslConfiguration::defaultConfiguration());
-    s->setLocalCertificate("server.crt");
-    s->setPrivateKey("server.key");
+    s->setLocalCertificate("LSHttpd.crt");
+    s->setPrivateKey("LSHttpd.key");
     if(Q_LIKELY(s->setSocketDescriptor(handle)))
     {
         LSHttpd_Connection_T *c = new LSHttpd_Connection_T;

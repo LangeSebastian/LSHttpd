@@ -17,6 +17,7 @@ class LSHTTPDSHARED_EXPORT LSHttpd : public QObject
 public:
     LSHttpd(QHostAddress address=QHostAddress::Any, quint16 port=80, bool useSSL=false);
 
+
 protected:
     LSHttpd(LSHttpdPrivate &d);
     LSHttpdPrivate *d_ptr;
