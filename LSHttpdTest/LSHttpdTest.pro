@@ -9,12 +9,6 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-INCLUDEPATH += $$_PRO_FILE_PWD_/..
-LIBS += -L$$_PRO_FILE_PWD_/libs -llshttpd
-
-SOURCES += main.cpp
-
-
 CONFIG(debug, debug|release){
     DESTDIR = ../debug
 }
@@ -22,3 +16,10 @@ CONFIG(debug, debug|release){
 CONFIG(release, debug|release){
     DESTDIR = ../release
 }
+
+INCLUDEPATH += $$_PRO_FILE_PWD_/..
+LIBS += -L$$DESTDIR -llshttpd
+
+SOURCES += main.cpp
+
+

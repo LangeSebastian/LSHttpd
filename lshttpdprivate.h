@@ -7,40 +7,78 @@
 #include <QList>
 #include <QMap>
 
+#include <lshttpd.h>
 #include <http-parser/http_parser.h>
-
-struct LSHttpd_Connection_T {
-    http_parser parser;
-    http_parser_settings settings;
-    QByteArray data;
-};
-
-
-class LSHttpd;
 
 class LSHttpdPrivate : public QTcpServer
 {
+    Q_OBJECT
 public:
     LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q);
     ~LSHttpdPrivate();
 
-    static instance();
-
-    static int onNotificationNull(http_parser* p);
-    static int onDataNull(http_parser* p, const char*at, size_t length);
-    static int onParserMessageCompleteWrapper(http_parser *parser);
-    int onParserMessageComplete(QSslSocket *socket, http_parser *parser);
-
-protected slots:
-    void readData();
+    void setCertificate(const QString &path, QSsl::EncodingFormat format);
+    void setCertificate(const QSslCertificate & certificate);
+    void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm, QSsl::EncodingFormat format, const QByteArray & passPhrase = QByteArray());
+    void setPrivateKey(const QSslKey &key);
 
 protected:
     LSHttpd *q_ptr;
-    QMap<QSslSocket*, LSHttpd_Connection_T*> m_sslSocketMap;
+
+    QVector<LSHttpdRequest*> m_openRequests;
+    QSslCertificate m_sslCert;
+    QSslKey m_sslKey;
 
     void incomingConnection(qintptr handle) Q_DECL_OVERRIDE;
-    void disconnectSocket(QSslSocket* socket);
+    void removeRequest();
 
+};
+
+class LSHttpdRequestPrivate : public QObject
+{
+    Q_OBJECT
+
+    LSHttpdRequest *q_ptr;
+    QScopedPointer<QSslSocket> m_socket;
+
+    http_parser m_requestParser;
+    http_parser_settings m_requestParserSettings;
+    QByteArray m_requestData;
+    bool m_requestComplete;
+
+    http_parser m_responseParser;
+    http_parser_settings m_responseParserSettings;
+    QByteArray m_responseData;
+    bool m_responseComplete;
+
+    void onSocketReadyRead();
+
+    void closeSocket();
+    void closeRequest();
+
+    friend class LSHttpdPrivate;
+
+public:
+    LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);
+    ~LSHttpdRequestPrivate();
+
+    http_parser* requestParser();
+    http_parser_settings* requestParserSettings();
+
+    http_parser* responseParser();
+    http_parser_settings* responseParserSettings();
+
+    bool validateResponse(QByteArray outData);
+    bool validateResponse();
+
+    bool requestComplete() const;
+    bool responseComplete() const;
+
+    static int onNotificationNull(http_parser* p);
+    static int onDataNull(http_parser* p, const char*at, size_t length);
+
+    static int onRequestMessageCompleteWrapper(http_parser *parser);
+    int onRequestMessageComplete();
 };
 
 #endif // LSHTTPDPRIVATE_H
