@@ -16,12 +16,14 @@ DEFINES += LSHTTPD_LIBRARY
 
 SOURCES += lshttpd.cpp \
     lshttpdprivate.cpp \
-    http-parser/http_parser.c
+    http-parser/http_parser.c \
+    lshttpdresource.cpp
 
 HEADERS += lshttpd.h\
         lshttpd_global.h \
         lshttpdprivate.h \
-        http-parser/http_parser.h
+        http-parser/http_parser.h \
+    lshttpdresource.h
 
 
 unix {

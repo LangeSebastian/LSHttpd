@@ -22,10 +22,15 @@ public:
     void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm, QSsl::EncodingFormat format, const QByteArray & passPhrase = QByteArray());
     void setPrivateKey(const QSslKey &key);
 
+    LSHttpdResource* registerFallback();
+    LSHttpdResource* registerResource(QRegularExpression rx);
+
 protected:
     LSHttpd *q_ptr;
 
     QVector<LSHttpdRequest*> m_openRequests;
+
+
     QSslCertificate m_sslCert;
     QSslKey m_sslKey;
 

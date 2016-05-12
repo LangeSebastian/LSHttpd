@@ -13,9 +13,11 @@
 #include <QByteArray>
 #include <QPair>
 #include <QSslSocket>
+#include <QRegularExpression>
 
 class LSHttpdPrivate;
 class LSHttpdRequestPrivate;
+class LSHttpdResource;
 
 typedef QPair<QString,QString> LSHttpdHeaderPair;
 
@@ -43,6 +45,9 @@ public:
     void setCertificate(const QSslCertificate & certificate);
     void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm = QSsl::Rsa, QSsl::EncodingFormat format = QSsl::Pem, const QByteArray & passPhrase = QByteArray());
     void setPrivateKey(const QSslKey &key);
+
+    LSHttpdResource* registerFallback();    //Custom handling of 404 etc.
+    LSHttpdResource* registerResource(QRegularExpression rx);   //rx match for relative Url
 
 signals:
     void getResource();
