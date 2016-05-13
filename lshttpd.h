@@ -26,21 +26,8 @@ class LSHTTPDSHARED_EXPORT LSHttpd : public QObject
     Q_OBJECT
 
 public:
-    enum ResponseCode : int {
-        OK = 200,                       //Ok Response Codes 2xx
-        Created = 201,
-        Accepted = 202,
-        NoContent = 204,
-        Redirection = 301,              //Redirect / Modification 3xx
-        NotModified = 304,
-        NotFound = 404,                 //Request Error Responses 4xx
-        MethodNotAllowed = 405,
-        Gone = 410,
-        PreconditionFailed = 412,
-        NotImplemented = 501            //Server Error Response 5xx
-    };
-
     LSHttpd(QHostAddress address=QHostAddress::Any, quint16 port=80, bool useSSL=false);
+
     void setCertificate(const QString &path, QSsl::EncodingFormat format = QSsl::Pem);
     void setCertificate(const QSslCertificate & certificate);
     void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm = QSsl::Rsa, QSsl::EncodingFormat format = QSsl::Pem, const QByteArray & passPhrase = QByteArray());
@@ -63,8 +50,25 @@ class LSHTTPDSHARED_EXPORT LSHttpdRequest : public QObject
 {
     Q_OBJECT
 
+public:
+    enum ResponseCode : int {
+        OK = 200,                       //Ok Response Codes 2xx
+        Created = 201,
+        Accepted = 202,
+        NoContent = 204,
+        Redirection = 301,              //Redirect / Modification 3xx
+        NotModified = 304,
+        NotFound = 404,                 //Request Error Responses 4xx
+        MethodNotAllowed = 405,
+        Gone = 410,
+        PreconditionFailed = 412,
+        NotImplemented = 501            //Server Error Response 5xx
+    };
+
+private:
     QString m_resource;
-    LSHttpd::ResponseCode m_responseCode;
+    QString m_method;
+    int m_responseCode;
     QList<LSHttpdHeaderPair> m_requestHeaderList;
     QList<LSHttpdHeaderPair> m_responseHeaderList;
     QByteArray m_requestBodyData;
@@ -83,23 +87,36 @@ signals:
     void requestFinished();
 
 public:
+
     ~LSHttpdRequest();
 
+    //Requested Url
     QString resource() const;
-    LSHttpd::ResponseCode responseCode() const;
-    void setResponseCode(LSHttpd::ResponseCode value);
+    QString method() const;
+
+    //Status Code Response
+    int responseCode() const;
+
+    //Headers
     QList<LSHttpdHeaderPair> requestHeaderList() const;
     QList<LSHttpdHeaderPair> responseHeaderList() const;
-    void setResponseHeaderList(const QList<LSHttpdHeaderPair> &responseHeaderList);
+
+    //Body
     QByteArray requestBodyData() const;
     QByteArray responseBodyData() const;
-    void setResponseBodyData(const QByteArray &responseBodyData);
-    QByteArray requestRaw();
 
+    QByteArray requestRaw();
+    QByteArray responseRaw();
+
+    void createResponse(int in_status, QList<LSHttpdHeaderPair> in_headerList, QByteArray in_bodyData);
     bool validateResponse(QByteArray outData);
     bool validateResponse();
 
+    bool sendResponse();
+
     void response404();
+    void response204();
+
 
 };
 

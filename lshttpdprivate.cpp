@@ -1,9 +1,11 @@
 #include "lshttpdprivate.h"
 #include "lshttpd.h"
 
+#include <QDebug>
 #include <QSslConfiguration>
 #include <QFile>
 
+#include <lshttpd.h>
 #include <lshttpdresource.h>
 
 static QMap<http_parser*,LSHttpdRequest*> LSHTTPD_PARSER_MAP;
@@ -110,6 +112,7 @@ void LSHttpdPrivate::incomingConnection(qintptr handle)
     {
         LSHttpdRequest *request = new LSHttpdRequest(s);
         LSHTTPD_PARSER_MAP.insert(request->d_ptr->requestParser(),request);
+        LSHTTPD_PARSER_MAP.insert(request->d_ptr->responseParser(),request);
         m_openRequests.append(request);
         connect(request,&LSHttpdRequest::requestFinished,this,&LSHttpdPrivate::removeRequest);
         connect(request->d_ptr,&LSHttpdRequestPrivate::requestCompleted,this,&LSHttpdPrivate::mapRequestToResource);
@@ -122,6 +125,7 @@ void LSHttpdPrivate::removeRequest()
 {
     LSHttpdRequest *request = static_cast<LSHttpdRequest*>(sender());
     LSHTTPD_PARSER_MAP.remove(request->d_ptr->requestParser());
+    LSHTTPD_PARSER_MAP.remove(request->d_ptr->responseParser());
     m_openRequests.removeOne(request);
     request->deleteLater();
 }
@@ -168,34 +172,237 @@ int LSHttpdRequestPrivate::onDataNull(http_parser *p, const char *at, size_t len
     return 0;
 }
 
-int LSHttpdRequestPrivate::onRequestMessageCompleteWrapper(http_parser *parser)
+int LSHttpdRequestPrivate::onMessageBeginCB(http_parser *parser)
 {
     if(LSHTTPD_PARSER_MAP.contains(parser))
     {
         LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(parser);
         Q_ASSERT(r);
 
-        return r->d_ptr->onRequestMessageComplete();
+        return r->d_ptr->onMessageBegin(parser);
     }
     return -1;
 }
 
-int LSHttpdRequestPrivate::onRequestMessageComplete()
+int LSHttpdRequestPrivate::onMessageBegin(http_parser *p)
 {
-    m_requestComplete = true;
-    emit requestCompleted(q_ptr);
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ");
+    if (p == &m_requestParser)
+    {
+        m_requestComplete = false;
+    }
+    else
+    {
+        m_responseComplete = false;
+    }
+    return 0;
+}
 
-    //TODO Response hier ausgeben und verarbeiten
+int LSHttpdRequestPrivate::onUrlCB(http_parser *p, const char *at, size_t length)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
 
-    //Verarbeiten der Anfrage
-    //socket->write("HTTP/1.1 404 Not Found\r\n\r\n");
-    //socket->write("HTTP/1.1 200\r\n<html><head><Title>Test</title></head><body><b>test</b></body></html>\r\n\r\n");
+        return r->d_ptr->onUrl(QByteArray(at,length),p);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onUrl(QByteArray in, http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+    if (p == &m_requestParser)
+    {
+        m_requestParserState = STATE_URL;
+        q_ptr->m_resource.append(QString::fromLocal8Bit(in));
+    }
+    else
+    {
+        m_responseParserState = STATE_URL;
+        qDebug()<<Q_FUNC_INFO<<"Response should not have url.";
+    }
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onStatusCB(http_parser *p, const char *at, size_t length)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onStatus(QByteArray(at,length),p);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onStatus(QByteArray in, http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+    if (p == &m_requestParser)
+    {
+        m_requestParserState = STATE_STATUS;
+        qDebug()<<Q_FUNC_INFO<<"Request should not have statuscode.";
+    }
+    else
+    {
+        m_responseParserState = STATE_STATUS;
+
+        q_ptr->m_responseCode = in.toInt();
+    }
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onHeaderFieldCB(http_parser *p, const char *at, size_t length)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onHeaderField(QByteArray(at,length),p);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onHeaderField(QByteArray in, http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+    if (p == &m_requestParser)
+    {
+        if (m_requestParserState != STATE_HEADERFIELD)
+        {
+            q_ptr->m_requestHeaderList.append(LSHttpdHeaderPair());
+        }
+        m_requestParserState = STATE_HEADERFIELD;
+        q_ptr->m_requestHeaderList.last().first.append(in);
+    }
+    else
+    {
+        if (m_responseParserState != STATE_HEADERFIELD)
+        {
+            q_ptr->m_responseHeaderList.append(LSHttpdHeaderPair());
+        }
+        m_responseParserState = STATE_HEADERFIELD;
+        q_ptr->m_responseHeaderList.last().first.append(in);
+    }
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onHeaderValueCB(http_parser *p, const char *at, size_t length)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onHeaderValue(QByteArray(at,length),p);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onHeaderValue(QByteArray in, http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+    if (p == &m_requestParser)
+    {
+        m_requestParserState = STATE_HEADERVALUE;
+        q_ptr->m_requestHeaderList.last().second.append(in);
+    }
+    else
+    {
+        m_responseParserState = STATE_HEADERVALUE;
+        q_ptr->m_responseHeaderList.last().second.append(in);
+    }
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onHeaderCompleteCB(http_parser *p)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onHeaderComplete(p);
+    }
+    return -1;
+
+}
+
+int LSHttpdRequestPrivate::onHeaderComplete(http_parser *p)
+{
+    //NOTE: Nothing to do on header complete?
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onBodyCB(http_parser *p, const char *at, size_t length)
+{
+    if(LSHTTPD_PARSER_MAP.contains(p))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(p);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onBody(QByteArray(at,length),p);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onBody(QByteArray in, http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+    if (p == &m_requestParser)
+    {
+        m_requestParserState = STATE_BODY;
+        q_ptr->m_requestBodyData.append(in);
+    }
+    else
+    {
+        m_responseParserState = STATE_BODY;
+        q_ptr->m_responseBodyData.append(in);
+    }
+    return 0;
+}
+
+int LSHttpdRequestPrivate::onMessageCompleteWrapperCB(http_parser *parser)
+{
+    if(LSHTTPD_PARSER_MAP.contains(parser))
+    {
+        LSHttpdRequest *r = LSHTTPD_PARSER_MAP.value(parser);
+        Q_ASSERT(r);
+
+        return r->d_ptr->onMessageComplete(parser);
+    }
+    return -1;
+}
+
+int LSHttpdRequestPrivate::onMessageComplete(http_parser *p)
+{
+    qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ");
+    if (p == &m_requestParser)
+    {
+        m_requestComplete = true;
+        emit requestCompleted(q_ptr);
+
+    }
+    else
+    {
+        m_responseComplete = true;
+        emit responseCompleted(q_ptr);
+    }
     return 0;
 }
 
 QByteArray LSHttpdRequestPrivate::requestRaw()
 {
     return m_requestData;
+}
+
+QByteArray LSHttpdRequestPrivate::responseRaw()
+{
+    return m_responseData;
 }
 
 void LSHttpdRequestPrivate::response404()
@@ -205,8 +412,17 @@ void LSHttpdRequestPrivate::response404()
                     "Content-Length: 102\r\n"
                     "\r\n"
                     "<!DOCTYPE html><html lang=en><title>Error 404 (Not Found)!!1</title>You should not read this...</html>";
-    m_socket->write(ba);
-    m_socket->waitForBytesWritten();
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response204()
+{
+    QByteArray ba = "HTTP/1.1 204 No Content\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 102\r\n"
+                    "\r\n"
+                    "<!DOCTYPE html><html lang=en><title>204 No Content!!1</title>Nothing to see heres...</html>";
+    writeData(ba);
 }
 
 void LSHttpdRequestPrivate::onSocketReadyRead()
@@ -215,6 +431,22 @@ void LSHttpdRequestPrivate::onSocketReadyRead()
 
     //Parser for request data
     http_parser_execute(&m_requestParser,&m_requestParserSettings,m_requestData.data(),m_requestData.size());
+}
+
+void LSHttpdRequestPrivate::bytesWritten(qint64 bytes)
+{
+    m_responseBytesLeftToWrite = m_responseBytesLeftToWrite - bytes;
+    if(m_responseBytesLeftToWrite <= 0)
+    {
+        closeRequest();
+    }
+}
+
+void LSHttpdRequestPrivate::writeData(QByteArray ba)
+{
+    m_responseBytesLeftToWrite += ba.size();
+    m_socket->write(ba);
+    m_socket->flush();
 }
 
 void LSHttpdRequestPrivate::closeSocket()
@@ -239,27 +471,30 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *so
     m_requestComplete = false;
     m_responseComplete = false;
 
+    m_requestParserState = STATE_NULL;
+    m_responseParserState = STATE_NULL;
+
     m_requestParserSettings.on_message_begin = onNotificationNull;
-    m_requestParserSettings.on_header_field = onDataNull;
-    m_requestParserSettings.on_header_value = onDataNull;
-    m_requestParserSettings.on_url = onDataNull;
-    m_requestParserSettings.on_body = onDataNull;
     m_requestParserSettings.on_status = onDataNull;
+    m_requestParserSettings.on_url = onUrlCB;
+    m_requestParserSettings.on_header_field = onHeaderFieldCB;
+    m_requestParserSettings.on_header_value = onHeaderValueCB;
     m_requestParserSettings.on_chunk_complete = onNotificationNull;
     m_requestParserSettings.on_chunk_header = onNotificationNull;
-    m_requestParserSettings.on_headers_complete = onNotificationNull;
-    m_requestParserSettings.on_message_complete = onRequestMessageCompleteWrapper;
+    m_requestParserSettings.on_headers_complete = onHeaderCompleteCB;
+    m_requestParserSettings.on_body = onBodyCB;
+    m_requestParserSettings.on_message_complete = onMessageCompleteWrapperCB;
 
     m_responseParserSettings.on_message_begin = onNotificationNull;
-    m_responseParserSettings.on_header_field = onDataNull;
-    m_responseParserSettings.on_header_value = onDataNull;
+    m_responseParserSettings.on_status = onStatusCB;
     m_responseParserSettings.on_url = onDataNull;
-    m_responseParserSettings.on_body = onDataNull;
-    m_responseParserSettings.on_status = onDataNull;
+    m_responseParserSettings.on_header_field = onHeaderFieldCB;
+    m_responseParserSettings.on_header_value = onHeaderValueCB;
     m_responseParserSettings.on_chunk_complete = onNotificationNull;
     m_responseParserSettings.on_chunk_header = onNotificationNull;
-    m_responseParserSettings.on_headers_complete = onNotificationNull;
-    m_responseParserSettings.on_message_complete = onNotificationNull;
+    m_responseParserSettings.on_headers_complete = onHeaderCompleteCB;
+    m_responseParserSettings.on_body = onBodyCB;
+    m_responseParserSettings.on_message_complete = onMessageCompleteWrapperCB;
 
     http_parser_init(&m_requestParser, HTTP_REQUEST);
     http_parser_init(&m_responseParser, HTTP_RESPONSE);
@@ -284,6 +519,7 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *so
     //Client disconnects before request is finished => just close request
     connect(socket,&QSslSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
 
+    connect(socket,&QSslSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
     socket->startServerEncryption();
 }
 
@@ -312,14 +548,56 @@ http_parser_settings *LSHttpdRequestPrivate::responseParserSettings()
     return &m_responseParserSettings;
 }
 
+void LSHttpdRequestPrivate::createResponse(int in_status, QList<LSHttpdHeaderPair> in_headerList, QByteArray in_bodyData)
+{
+    m_responseData.clear();
+    m_responseData.append(QString("HTTP/1.1 %1\r\n").arg(in_status));
+    bool hasContentLength = false;
+    for(auto it = in_headerList.constBegin(), et = in_headerList.constEnd(); it!=et; ++it)
+    {
+        m_responseData.append(it->first).append(": ").append(it->second).append("\r\n");
+        if(it->first.compare("Content-Length",Qt::CaseInsensitive) == 0)
+        {
+            hasContentLength = true;
+        }
+    }
+    if(in_bodyData.size())
+    {
+        if(!hasContentLength)
+        {
+            m_responseData.append(QString("Content-Length: %1\r\n").arg(in_bodyData.size()));
+        }
+    }
+    m_responseData.append("\r\n");
+    m_responseData.append(in_bodyData);
+}
+
 bool LSHttpdRequestPrivate::validateResponse(QByteArray outData)
 {
-    Q_UNIMPLEMENTED();
-    return true;
+    m_responseData = outData;
+    m_responseParserState = STATE_NULL;
+    http_parser_execute(&m_responseParser,&m_responseParserSettings,m_responseData.data(),m_responseData.size());
+
+    return m_responseComplete;
 }
 
 bool LSHttpdRequestPrivate::validateResponse()
 {
-    Q_UNIMPLEMENTED();
+    m_responseParserState = STATE_NULL;
+    http_parser_execute(&m_responseParser,&m_responseParserSettings,m_responseData.data(),m_responseData.size());
+
+    return m_responseComplete;
+}
+
+bool LSHttpdRequestPrivate::sendResponse()
+{
+    if(!m_responseComplete)
+    {
+        if(!validateResponse())
+        {
+            return false;
+        }
+    }
+    writeData(m_responseData);
     return true;
 }

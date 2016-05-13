@@ -22,4 +22,10 @@ LIBS += -L$$DESTDIR -llshttpd
 
 SOURCES += main.cpp
 
+ADDITIONAL_FILES += LSHttpd.crt \
+                    LSHttpd.key \
+                    index.html
+
+OTHER_FILES += $$ADDITIONAL_FILES
+
 

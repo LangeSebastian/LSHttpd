@@ -48,6 +48,14 @@ class LSHttpdRequestPrivate : public QObject
 {
     Q_OBJECT
 
+    enum ParserState : int {
+        STATE_NULL = 0,
+        STATE_STATUS,
+        STATE_URL,
+        STATE_HEADERFIELD,
+        STATE_HEADERVALUE,
+        STATE_BODY
+    };
     LSHttpdRequest *q_ptr;
     QScopedPointer<QSslSocket> m_socket;
 
@@ -55,13 +63,19 @@ class LSHttpdRequestPrivate : public QObject
     http_parser_settings m_requestParserSettings;
     QByteArray m_requestData;
     bool m_requestComplete;
+    ParserState m_requestParserState;
 
     http_parser m_responseParser;
     http_parser_settings m_responseParserSettings;
     QByteArray m_responseData;
     bool m_responseComplete;
+    ParserState m_responseParserState;
 
     void onSocketReadyRead();
+
+    qint64 m_responseBytesLeftToWrite;
+    void bytesWritten(qint64 bytes);
+    void writeData(QByteArray ba);
 
     void closeSocket();
     void closeRequest();
@@ -78,8 +92,11 @@ public:
     http_parser* responseParser();
     http_parser_settings* responseParserSettings();
 
+    void createResponse(int in_status, QList<LSHttpdHeaderPair> in_headerList, QByteArray in_bodyData);
     bool validateResponse(QByteArray outData);
     bool validateResponse();
+
+    bool sendResponse();
 
     bool requestComplete() const;
     bool responseComplete() const;
@@ -87,16 +104,39 @@ public:
     static int onNotificationNull(http_parser* p);
     static int onDataNull(http_parser* p, const char*at, size_t length);
 
-    static int onRequestMessageCompleteWrapper(http_parser *parser);
-    int onRequestMessageComplete();
+    static int onMessageBeginCB(http_parser *parser);
+    int onMessageBegin(http_parser *p);
+
+    static int onUrlCB(http_parser* p, const char*at, size_t length);
+    int onUrl(QByteArray in, http_parser* p);
+
+    static int onStatusCB(http_parser* p, const char*at, size_t length);
+    int onStatus(QByteArray in, http_parser* p);
+
+    static int onHeaderFieldCB(http_parser* p, const char*at, size_t length);
+    int onHeaderField(QByteArray in, http_parser* p);
+
+    static int onHeaderValueCB(http_parser* p, const char*at, size_t length);
+    int onHeaderValue(QByteArray in, http_parser* p);
+
+    static int onHeaderCompleteCB(http_parser* p);
+    int onHeaderComplete(http_parser *p);
+
+    static int onBodyCB(http_parser* p, const char*at, size_t length);
+    int onBody(QByteArray in, http_parser* p);
+
+    static int onMessageCompleteWrapperCB(http_parser *parser);
+    int onMessageComplete(http_parser* p);
 
     QByteArray requestRaw();
+    QByteArray responseRaw();
 
     void response404();
+    void response204();
 
 signals:
     void requestCompleted(LSHttpdRequest* request);
-
+    void responseCompleted(LSHttpdRequest* request);
 };
 
 #endif // LSHTTPDPRIVATE_H

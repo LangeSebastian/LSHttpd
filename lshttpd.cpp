@@ -65,14 +65,14 @@ QString LSHttpdRequest::resource() const
     return m_resource;
 }
 
-LSHttpd::ResponseCode LSHttpdRequest::responseCode() const
+QString LSHttpdRequest::method() const
 {
-    return m_responseCode;
+    return m_method;
 }
 
-void LSHttpdRequest::setResponseCode(LSHttpd::ResponseCode value)
+int LSHttpdRequest::responseCode() const
 {
-    m_responseCode = value;
+    return m_responseCode;
 }
 
 QList<LSHttpdHeaderPair> LSHttpdRequest::requestHeaderList() const
@@ -85,11 +85,6 @@ QList<LSHttpdHeaderPair> LSHttpdRequest::responseHeaderList() const
     return m_responseHeaderList;
 }
 
-void LSHttpdRequest::setResponseHeaderList(const QList<LSHttpdHeaderPair> &responseHeaderList)
-{
-    m_responseHeaderList = responseHeaderList;
-}
-
 QByteArray LSHttpdRequest::requestBodyData() const
 {
     return m_requestBodyData;
@@ -100,14 +95,19 @@ QByteArray LSHttpdRequest::responseBodyData() const
     return m_responseBodyData;
 }
 
-void LSHttpdRequest::setResponseBodyData(const QByteArray &responseBodyData)
-{
-    m_responseBodyData = responseBodyData;
-}
-
 QByteArray LSHttpdRequest::requestRaw()
 {
     return d_ptr->requestRaw();
+}
+
+QByteArray LSHttpdRequest::responseRaw()
+{
+    return d_ptr->responseRaw();
+}
+
+void LSHttpdRequest::createResponse(int in_status, QList<LSHttpdHeaderPair> in_headerList, QByteArray in_bodyData)
+{
+    d_ptr->createResponse(in_status,in_headerList,in_bodyData);
 }
 
 bool LSHttpdRequest::validateResponse(QByteArray outData)
@@ -120,7 +120,17 @@ bool LSHttpdRequest::validateResponse()
     return d_ptr->validateResponse();
 }
 
+bool LSHttpdRequest::sendResponse()
+{
+    return d_ptr->sendResponse();
+}
+
 void LSHttpdRequest::response404()
 {
     d_ptr->response404();
+}
+
+void LSHttpdRequest::response204()
+{
+    d_ptr->response204();
 }
