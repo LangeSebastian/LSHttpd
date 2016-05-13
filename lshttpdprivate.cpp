@@ -4,6 +4,8 @@
 #include <QSslConfiguration>
 #include <QFile>
 
+#include <lshttpdresource.h>
+
 static QMap<http_parser*,LSHttpdRequest*> LSHTTPD_PARSER_MAP;
 
 LSHttpdPrivate::LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q) : QTcpServer(q), q_ptr(q)
@@ -55,6 +57,49 @@ void LSHttpdPrivate::setPrivateKey(const QSslKey &key)
     m_sslKey = key;
 }
 
+QSharedPointer<LSHttpdResource> LSHttpdPrivate::registerFallback()
+{
+    QRegularExpression rx(".*");
+    if(!m_fallBackResource.isNull())
+    {
+        m_fallBackResource->invalidate();
+    }
+    m_fallBackResource.reset(new LSHttpdResource());
+    m_fallBackResource->setResourceIdentifier(rx);
+    return m_fallBackResource;
+}
+
+void LSHttpdPrivate::unregisterFallback()
+{
+    if(!m_fallBackResource.isNull())
+    {
+        m_fallBackResource->invalidate();
+    }
+    m_fallBackResource.reset();
+}
+
+QSharedPointer<LSHttpdResource> LSHttpdPrivate::registerResource(QRegularExpression rx)
+{
+    for(auto it = m_registeredResources.constBegin(), et =m_registeredResources.constEnd(); it!=et; ++it)
+    {
+        if (it->data()->resourceIdentifier() == rx)
+        {
+            return (*it);
+        }
+    }
+    auto res = QSharedPointer<LSHttpdResource>(new LSHttpdResource());
+    res->setResourceIdentifier(rx);
+    m_registeredResources.append(res);
+    return res;
+}
+
+void LSHttpdPrivate::unregisterResource(QSharedPointer<LSHttpdResource> resource)
+{
+    Q_ASSERT(resource.data());
+    m_registeredResources.removeOne(resource);
+    resource->invalidate();
+}
+
 void LSHttpdPrivate::incomingConnection(qintptr handle)
 {
     QSslSocket* s = new QSslSocket;
@@ -67,6 +112,7 @@ void LSHttpdPrivate::incomingConnection(qintptr handle)
         LSHTTPD_PARSER_MAP.insert(request->d_ptr->requestParser(),request);
         m_openRequests.append(request);
         connect(request,&LSHttpdRequest::requestFinished,this,&LSHttpdPrivate::removeRequest);
+        connect(request->d_ptr,&LSHttpdRequestPrivate::requestCompleted,this,&LSHttpdPrivate::mapRequestToResource);
     }else{
         delete s;
     }
@@ -78,6 +124,26 @@ void LSHttpdPrivate::removeRequest()
     LSHTTPD_PARSER_MAP.remove(request->d_ptr->requestParser());
     m_openRequests.removeOne(request);
     request->deleteLater();
+}
+
+void LSHttpdPrivate::mapRequestToResource(LSHttpdRequest *request)
+{
+    if(!m_openRequests.contains(request))
+    {
+        return;
+    }
+    for(auto it = m_registeredResources.constBegin(), et = m_registeredResources.constEnd(); it!=et; ++it)
+    {
+        if(it->data()->resourceIdentifier().match(request->resource()).hasMatch())
+        {
+            it->data()->promoteRequest(request);
+            return;
+        }
+    }
+    if(!m_fallBackResource.isNull())
+    {
+        m_fallBackResource->promoteRequest(request);
+    }
 }
 
 bool LSHttpdRequestPrivate::requestComplete() const
@@ -116,11 +182,24 @@ int LSHttpdRequestPrivate::onRequestMessageCompleteWrapper(http_parser *parser)
 
 int LSHttpdRequestPrivate::onRequestMessageComplete()
 {
+    m_requestComplete = true;
+    emit requestCompleted(q_ptr);
+
     //TODO Response hier ausgeben und verarbeiten
 
     //Verarbeiten der Anfrage
     //socket->write("HTTP/1.1 404 Not Found\r\n\r\n");
     //socket->write("HTTP/1.1 200\r\n<html><head><Title>Test</title></head><body><b>test</b></body></html>\r\n\r\n");
+    return 0;
+}
+
+QByteArray LSHttpdRequestPrivate::requestRaw()
+{
+    return m_requestData;
+}
+
+void LSHttpdRequestPrivate::response404()
+{
     QByteArray ba = "HTTP/1.1 404 Not Found\r\n"
                     "Content-Type: text/html; charset=UTF-8\r\n"
                     "Content-Length: 102\r\n"
@@ -128,8 +207,6 @@ int LSHttpdRequestPrivate::onRequestMessageComplete()
                     "<!DOCTYPE html><html lang=en><title>Error 404 (Not Found)!!1</title>You should not read this...</html>";
     m_socket->write(ba);
     m_socket->waitForBytesWritten();
-//    closeRequest();
-    return 0;
 }
 
 void LSHttpdRequestPrivate::onSocketReadyRead()

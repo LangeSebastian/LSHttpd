@@ -26,6 +26,26 @@ void LSHttpd::setPrivateKey(const QSslKey &key)
     d_ptr->setPrivateKey(key);
 }
 
+QSharedPointer<LSHttpdResource> LSHttpd::registerFallback()
+{
+    return d_ptr->registerFallback();
+}
+
+void LSHttpd::unregisterFallback()
+{
+    d_ptr->unregisterFallback();
+}
+
+QSharedPointer<LSHttpdResource> LSHttpd::registerResource(QRegularExpression rx)
+{
+    return d_ptr->registerResource(rx);
+}
+
+void LSHttpd::unregisterResource(QSharedPointer<LSHttpdResource> resource)
+{
+    d_ptr->unregisterResource(resource);
+}
+
 LSHttpdRequest::LSHttpdRequest(QSslSocket *socket, QObject *parent) : QObject(parent), d_ptr(new LSHttpdRequestPrivate(this, socket))
 {
 }
@@ -55,12 +75,12 @@ void LSHttpdRequest::setResponseCode(LSHttpd::ResponseCode value)
     m_responseCode = value;
 }
 
-QList<LSHttpdHeaderPair> LSHttpdRequest::getRequestHeaderList() const
+QList<LSHttpdHeaderPair> LSHttpdRequest::requestHeaderList() const
 {
     return m_requestHeaderList;
 }
 
-QList<LSHttpdHeaderPair> LSHttpdRequest::getResponseHeaderList() const
+QList<LSHttpdHeaderPair> LSHttpdRequest::responseHeaderList() const
 {
     return m_responseHeaderList;
 }
@@ -70,12 +90,12 @@ void LSHttpdRequest::setResponseHeaderList(const QList<LSHttpdHeaderPair> &respo
     m_responseHeaderList = responseHeaderList;
 }
 
-QByteArray LSHttpdRequest::getRequestBodyData() const
+QByteArray LSHttpdRequest::requestBodyData() const
 {
     return m_requestBodyData;
 }
 
-QByteArray LSHttpdRequest::getResponseBodyData() const
+QByteArray LSHttpdRequest::responseBodyData() const
 {
     return m_responseBodyData;
 }
@@ -83,6 +103,11 @@ QByteArray LSHttpdRequest::getResponseBodyData() const
 void LSHttpdRequest::setResponseBodyData(const QByteArray &responseBodyData)
 {
     m_responseBodyData = responseBodyData;
+}
+
+QByteArray LSHttpdRequest::requestRaw()
+{
+    return d_ptr->requestRaw();
 }
 
 bool LSHttpdRequest::validateResponse(QByteArray outData)
@@ -93,4 +118,9 @@ bool LSHttpdRequest::validateResponse(QByteArray outData)
 bool LSHttpdRequest::validateResponse()
 {
     return d_ptr->validateResponse();
+}
+
+void LSHttpdRequest::response404()
+{
+    d_ptr->response404();
 }

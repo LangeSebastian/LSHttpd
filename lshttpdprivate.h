@@ -22,20 +22,25 @@ public:
     void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm, QSsl::EncodingFormat format, const QByteArray & passPhrase = QByteArray());
     void setPrivateKey(const QSslKey &key);
 
-    LSHttpdResource* registerFallback();
-    LSHttpdResource* registerResource(QRegularExpression rx);
+    QSharedPointer<LSHttpdResource> registerFallback();
+    void unregisterFallback();
+    QSharedPointer<LSHttpdResource> registerResource(QRegularExpression rx);
+    void unregisterResource(QSharedPointer<LSHttpdResource> resource);
 
 protected:
     LSHttpd *q_ptr;
 
     QVector<LSHttpdRequest*> m_openRequests;
 
+    QSharedPointer<LSHttpdResource> m_fallBackResource;
+    QVector< QSharedPointer<LSHttpdResource> > m_registeredResources;
 
     QSslCertificate m_sslCert;
     QSslKey m_sslKey;
 
     void incomingConnection(qintptr handle) Q_DECL_OVERRIDE;
     void removeRequest();
+    void mapRequestToResource(LSHttpdRequest *request);
 
 };
 
@@ -84,6 +89,14 @@ public:
 
     static int onRequestMessageCompleteWrapper(http_parser *parser);
     int onRequestMessageComplete();
+
+    QByteArray requestRaw();
+
+    void response404();
+
+signals:
+    void requestCompleted(LSHttpdRequest* request);
+
 };
 
 #endif // LSHTTPDPRIVATE_H

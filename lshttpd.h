@@ -46,16 +46,12 @@ public:
     void setPrivateKey(const QString &path, QSsl::KeyAlgorithm keyAlgorithm = QSsl::Rsa, QSsl::EncodingFormat format = QSsl::Pem, const QByteArray & passPhrase = QByteArray());
     void setPrivateKey(const QSslKey &key);
 
-    LSHttpdResource* registerFallback();    //Custom handling of 404 etc.
-    LSHttpdResource* registerResource(QRegularExpression rx);   //rx match for relative Url
+    QSharedPointer<LSHttpdResource> registerFallback();    //Custom handling of 404 etc.
+    void unregisterFallback();
+    QSharedPointer<LSHttpdResource> registerResource(QRegularExpression rx);   //rx match for relative Url
+    void unregisterResource(QSharedPointer<LSHttpdResource> resource);
 
 signals:
-    void getResource();
-    void postResource();
-    void deleteResource();
-    void patchResource();
-    void putResource();
-    void headResource();
 
 protected:
     LSHttpd(LSHttpdPrivate &d);
@@ -92,15 +88,19 @@ public:
     QString resource() const;
     LSHttpd::ResponseCode responseCode() const;
     void setResponseCode(LSHttpd::ResponseCode value);
-    QList<LSHttpdHeaderPair> getRequestHeaderList() const;
-    QList<LSHttpdHeaderPair> getResponseHeaderList() const;
+    QList<LSHttpdHeaderPair> requestHeaderList() const;
+    QList<LSHttpdHeaderPair> responseHeaderList() const;
     void setResponseHeaderList(const QList<LSHttpdHeaderPair> &responseHeaderList);
-    QByteArray getRequestBodyData() const;
-    QByteArray getResponseBodyData() const;
+    QByteArray requestBodyData() const;
+    QByteArray responseBodyData() const;
     void setResponseBodyData(const QByteArray &responseBodyData);
+    QByteArray requestRaw();
 
     bool validateResponse(QByteArray outData);
     bool validateResponse();
+
+    void response404();
+
 };
 
 #endif // LSHTTPD_H
