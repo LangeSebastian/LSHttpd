@@ -1,5 +1,6 @@
 #include "lshttpd.h"
 #include "lshttpdprivate.h"
+#include <QCryptographicHash>
 
 LSHttpd::LSHttpd(QHostAddress address, quint16 port, bool useSSL) : d_ptr(new LSHttpdPrivate(address, port, useSSL, this))
 {
@@ -133,4 +134,23 @@ void LSHttpdRequest::response404()
 void LSHttpdRequest::response204()
 {
     d_ptr->response204();
+}
+
+QByteArray LSHttpdRequest::extractDigest(QByteArray headerValue)
+{
+    QRegularExpression rx("response=\"([^\"]+)\"");
+    auto rxMatch = rx.match(QString::fromLatin1(headerValue));
+    if(rxMatch.hasMatch())
+    {
+        return rxMatch.captured(1).toLatin1();
+    }
+    return "";
+}
+
+QByteArray LSHttpdRequest::calculateDigestMD5(QString user, QString password, QByteArray realm, QByteArray nonce)
+{
+    QByteArray ha1 = QCryptographicHash::hash(user.toLatin1()+':'+realm+':'+password.toLatin1(),QCryptographicHash::Md5).toHex();
+    QByteArray ha2 = QCryptographicHash::hash(m_method.toLatin1()+':'+m_resource.toLatin1(),QCryptographicHash::Md5).toHex();
+    QByteArray digest = QCryptographicHash::hash(ha1+':'+nonce+':'+ha2,QCryptographicHash::Md5).toHex();
+    return digest;
 }

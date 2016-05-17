@@ -383,9 +383,9 @@ int LSHttpdRequestPrivate::onMessageComplete(http_parser *p)
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ");
     if (p == &m_requestParser)
     {
+        q_ptr->m_method = parserMethodToString(p->method);
         m_requestComplete = true;
         emit requestCompleted(q_ptr);
-
     }
     else
     {
@@ -462,6 +462,16 @@ void LSHttpdRequestPrivate::closeRequest()
         closeSocket();
     }
     q_ptr->closeRequest();
+}
+
+QString LSHttpdRequestPrivate::parserMethodToString(int method)
+{
+    switch(method)
+    {
+#define XX(num, name, string) case num: return QStringLiteral(#string);
+        HTTP_METHOD_MAP(XX)
+#undef XX
+    }
 }
 
 LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *socket) : QObject(ptr), q_ptr(ptr)

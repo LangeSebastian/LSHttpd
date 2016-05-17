@@ -58,9 +58,13 @@ public:
         NoContent = 204,
         Redirection = 301,              //Redirect / Modification 3xx
         NotModified = 304,
+        RedirectionTemporarely = 307,
+        AuthRequired = 401,
+        Forbidden = 403,
         NotFound = 404,                 //Request Error Responses 4xx
         MethodNotAllowed = 405,
         Gone = 410,
+        ContentLengthRequired = 411,
         PreconditionFailed = 412,
         NotImplemented = 501            //Server Error Response 5xx
     };
@@ -117,6 +121,8 @@ public:
     void response404();
     void response204();
 
+    QByteArray extractDigest(QByteArray headerValue);
+    QByteArray calculateDigestMD5(QString user, QString password, QByteArray realm, QByteArray nonce);
 
 };
 

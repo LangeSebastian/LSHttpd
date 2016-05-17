@@ -82,6 +82,8 @@ class LSHttpdRequestPrivate : public QObject
 
     friend class LSHttpdPrivate;
 
+    QString parserMethodToString(int method);
+
 public:
     LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);
     ~LSHttpdRequestPrivate();
