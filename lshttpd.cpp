@@ -136,15 +136,30 @@ void LSHttpdRequest::response204()
     d_ptr->response204();
 }
 
-QByteArray LSHttpdRequest::extractDigest(QByteArray headerValue)
+QByteArray LSHttpdRequest::extractOption(QByteArray headerValue, QByteArray optionTag)
 {
-    QRegularExpression rx("response=\"([^\"]+)\"");
-    auto rxMatch = rx.match(QString::fromLatin1(headerValue));
+    if(headerValue.isEmpty() || optionTag.isEmpty())
+    {
+        return QByteArray();
+    }
+    QString pattern = QStringLiteral("%1=\"([^\"]+)\"");
+    QRegularExpression rx(pattern.arg(QString::fromLocal8Bit(optionTag)));
+    auto rxMatch = rx.match(QString::fromLocal8Bit(headerValue));
     if(rxMatch.hasMatch())
     {
-        return rxMatch.captured(1).toLatin1();
+        return rxMatch.captured(1).toLocal8Bit();
     }
     return "";
+}
+
+QByteArray LSHttpdRequest::extractUser(QByteArray headerValue)
+{
+    return extractOption(headerValue,"username");
+}
+
+QByteArray LSHttpdRequest::extractDigest(QByteArray headerValue)
+{
+    return extractOption(headerValue,"response");
 }
 
 QByteArray LSHttpdRequest::calculateDigestMD5(QString user, QString password, QByteArray realm, QByteArray nonce)

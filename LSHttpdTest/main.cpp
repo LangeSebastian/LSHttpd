@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
             if(file.open(QIODevice::ReadOnly))
             {
                 QByteArray data = file.readAll();
-                static QUuid nonceId;
+                static QUuid nonceId = QUuid::createUuid();
                 QList<LSHttpdHeaderPair> list;
 
                 bool authActive = false;
@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
                     request->createResponse(LSHttpdRequest::OK,list,data);
                 }
                 request->sendResponse();
+                file.close();
             }
         }
     });

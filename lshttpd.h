@@ -121,6 +121,8 @@ public:
     void response404();
     void response204();
 
+    QByteArray extractOption(QByteArray headerValue, QByteArray optionTag);
+    QByteArray extractUser(QByteArray headerValue);
     QByteArray extractDigest(QByteArray headerValue);
     QByteArray calculateDigestMD5(QString user, QString password, QByteArray realm, QByteArray nonce);
 
