@@ -76,6 +76,7 @@ class LSHttpdRequestPrivate : public QObject
     qint64 m_responseBytesLeftToWrite;
     void bytesWritten(qint64 bytes);
     void writeData(QByteArray ba);
+    void writeDataSocket(QByteArray ba);
 
     void closeSocket();
     void closeRequest();

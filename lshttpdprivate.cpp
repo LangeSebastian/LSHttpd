@@ -445,6 +445,11 @@ void LSHttpdRequestPrivate::bytesWritten(qint64 bytes)
 void LSHttpdRequestPrivate::writeData(QByteArray ba)
 {
     m_responseBytesLeftToWrite += ba.size();
+    QMetaObject::invokeMethod(this,"writeDataSocket",Qt::QueuedConnection,Q_ARG(QByteArray,ba));
+}
+
+void LSHttpdRequestPrivate::writeDataSocket(QByteArray ba)
+{
     m_socket->write(ba);
     m_socket->flush();
 }
@@ -472,6 +477,7 @@ QString LSHttpdRequestPrivate::parserMethodToString(int method)
         HTTP_METHOD_MAP(XX)
 #undef XX
     }
+    return QString();
 }
 
 LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *socket) : QObject(ptr), q_ptr(ptr)
