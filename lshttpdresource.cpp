@@ -1,4 +1,5 @@
 #include "lshttpdresource.h"
+#include <lshttpdprivate.h>
 
 LSHttpdResource::LSHttpdResource(QObject *parent) : QObject(parent)
 {
@@ -23,7 +24,15 @@ void LSHttpdResource::setResourceIdentifier(const QRegularExpression &resourceId
 
 void LSHttpdResource::promoteRequest(LSHttpdRequest *request)
 {
-    emit pendingRequest(request);
+    if(receivers(SIGNAL(pendingRequest(LSHttpdRequest*))) > 0)
+    {
+        //TODO Timer for autoClose (HTTP 500) requests if socket idle for n secs.
+        emit pendingRequest(request);
+    }
+    else
+    {
+        request->response500();
+    }
 }
 
 QRegularExpression LSHttpdResource::resourceIdentifier() const

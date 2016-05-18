@@ -145,8 +145,10 @@ void LSHttpdPrivate::mapRequestToResource(LSHttpdRequest *request)
             return;
         }
     }
-    if(!m_fallBackResource.isNull())
+    if(m_fallBackResource.isNull())
     {
+        request->response404();
+    }else{
         m_fallBackResource->promoteRequest(request);
     }
 }
