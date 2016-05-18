@@ -146,9 +146,84 @@ void LSHttpdRequest::response303(QByteArray redirectLocation)
     d_ptr->response303(redirectLocation);
 }
 
+void LSHttpdRequest::response304(QDateTime modificationDate)
+{
+    d_ptr->response304(modificationDate);
+}
+
+void LSHttpdRequest::response307(QByteArray redirectLocation)
+{
+    d_ptr->response307(redirectLocation);
+}
+
+void LSHttpdRequest::response400()
+{
+    d_ptr->response400();
+}
+
+void LSHttpdRequest::response401Basic(QByteArray realm)
+{
+    d_ptr->response401Basic(realm);
+}
+
+void LSHttpdRequest::response401Digest(QByteArray realm, QByteArray nonce)
+{
+    d_ptr->response401Digest(realm,nonce);
+}
+
+void LSHttpdRequest::response403()
+{
+    d_ptr->response403();
+}
+
 void LSHttpdRequest::response404()
 {
     d_ptr->response404();
+}
+
+void LSHttpdRequest::response405(QStringList allowedMethods)
+{
+    d_ptr->response405(allowedMethods);
+}
+
+void LSHttpdRequest::response410()
+{
+    d_ptr->response410();
+}
+
+void LSHttpdRequest::response411()
+{
+    d_ptr->response411();
+}
+
+void LSHttpdRequest::response412()
+{
+    d_ptr->response412();
+}
+
+void LSHttpdRequest::response500()
+{
+    d_ptr->response500();
+}
+
+void LSHttpdRequest::response501()
+{
+    d_ptr->response501();
+}
+
+void LSHttpdRequest::response502()
+{
+    d_ptr->response502();
+}
+
+void LSHttpdRequest::response503()
+{
+    d_ptr->response503();
+}
+
+void LSHttpdRequest::response504()
+{
+    d_ptr->response504();
 }
 
 QByteArray LSHttpdRequest::extractOption(QByteArray headerValue, QByteArray optionTag)

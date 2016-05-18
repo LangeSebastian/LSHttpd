@@ -122,7 +122,22 @@ public:
     void response301(QByteArray redirectLocation);
     void response302(QByteArray redirectLocation);
     void response303(QByteArray redirectLocation);
+    void response304(QDateTime modificationDate);
+    void response307(QByteArray redirectLocation);
+    void response400();
+    void response401Basic(QByteArray realm);
+    void response401Digest(QByteArray realm, QByteArray nonce);
+    void response403();
     void response404();
+    void response405(QStringList allowedMethods);
+    void response410();
+    void response411();
+    void response412();
+    void response500();
+    void response501();
+    void response502();
+    void response503();
+    void response504();
 
     QByteArray extractOption(QByteArray headerValue, QByteArray optionTag);
     QByteArray extractUser(QByteArray headerValue);
