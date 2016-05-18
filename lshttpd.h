@@ -118,8 +118,11 @@ public:
 
     bool sendResponse();
 
-    void response404();
     void response204();
+    void response301(QByteArray redirectLocation);
+    void response302(QByteArray redirectLocation);
+    void response303(QByteArray redirectLocation);
+    void response404();
 
     QByteArray extractOption(QByteArray headerValue, QByteArray optionTag);
     QByteArray extractUser(QByteArray headerValue);

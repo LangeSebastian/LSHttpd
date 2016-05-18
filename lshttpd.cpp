@@ -126,14 +126,29 @@ bool LSHttpdRequest::sendResponse()
     return d_ptr->sendResponse();
 }
 
-void LSHttpdRequest::response404()
-{
-    d_ptr->response404();
-}
-
 void LSHttpdRequest::response204()
 {
     d_ptr->response204();
+}
+
+void LSHttpdRequest::response301(QByteArray redirectLocation)
+{
+    d_ptr->response301(redirectLocation);
+}
+
+void LSHttpdRequest::response302(QByteArray redirectLocation)
+{
+    d_ptr->response302(redirectLocation);
+}
+
+void LSHttpdRequest::response303(QByteArray redirectLocation)
+{
+    d_ptr->response303(redirectLocation);
+}
+
+void LSHttpdRequest::response404()
+{
+    d_ptr->response404();
 }
 
 QByteArray LSHttpdRequest::extractOption(QByteArray headerValue, QByteArray optionTag)

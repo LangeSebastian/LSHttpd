@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QSslConfiguration>
 #include <QFile>
+#include <QStringList>
 
 #include <lshttpd.h>
 #include <lshttpdresource.h>
@@ -405,23 +406,214 @@ QByteArray LSHttpdRequestPrivate::responseRaw()
     return m_responseData;
 }
 
-void LSHttpdRequestPrivate::response404()
-{
-    QByteArray ba = "HTTP/1.1 404 Not Found\r\n"
-                    "Content-Type: text/html; charset=UTF-8\r\n"
-                    "Content-Length: 102\r\n"
-                    "\r\n"
-                    "<!DOCTYPE html><html lang=en><title>Error 404 (Not Found)!!1</title>You should not read this...</html>";
-    writeData(ba);
-}
-
 void LSHttpdRequestPrivate::response204()
 {
     QByteArray ba = "HTTP/1.1 204 No Content\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response301(QByteArray redirectLocation)
+{
+    QByteArray ba = "HTTP/1.1 301 Moved Permanently\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Location: "+redirectLocation+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response302(QByteArray redirectLocation)
+{
+    QByteArray ba = "HTTP/1.1 302 Found\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Location: "+redirectLocation+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response303(QByteArray redirectLocation)
+{
+    QByteArray ba = "HTTP/1.1 303 See Other\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Location: "+redirectLocation+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response304(QDateTime modificationDate)
+{
+    QByteArray ba = "HTTP/1.1 303 Not Modified\r\n"
+                    "Date: "+modificationDate.toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response307(QByteArray redirectLocation)
+{
+    QByteArray ba = "HTTP/1.1 307 Temporary Redirect\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Location: "+redirectLocation+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response400()
+{
+    QByteArray ba = "HTTP/1.1 400 Bad Request\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
                     "Content-Type: text/html; charset=UTF-8\r\n"
-                    "Content-Length: 102\r\n"
+                    "Content-Length: 165\r\n"
                     "\r\n"
-                    "<!DOCTYPE html><html lang=en><title>204 No Content!!1</title>Nothing to see heres...</html>";
+                    "<html>\r\n<head>\r\n<title>400 Bad Request</title>\r\n</head>\r\n<body>\r\n<h1>Bad Request</h1>\r\n<p>Your Browser sent an invalid request.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response401Basic(QByteArray realm)
+{
+    QByteArray ba = "HTTP/1.1 401 Unauthorized\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "WWW-Authenticate: realm=\""+realm+"\"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response401Digest(QByteArray realm, QByteArray nonce)
+{
+    QByteArray ba = "HTTP/1.1 401 Unauthorized\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "WWW-Authenticate: Digest realm=\""+realm+"\", nonce=\""+nonce.toBase64()+"\"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response403()
+{
+    QByteArray ba = "HTTP/1.1 403 Forbidden\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 170\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>403 Forbidden</title>\r\n</head>\r\n<body>\r\n<h1>Forbidden</h1>\r\n<p>Access to the requested resource is forbidden.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response404()
+{
+    QByteArray ba = "HTTP/1.1 404 Not Found\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 194\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>404 Document not found</title>\r\n</head>\r\n<body>\r\n<h1>Document not found</h1>\r\n<p>The requested resource does not exist on this server</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response405(QStringList allowedMethods)
+{
+    if(allowedMethods.isEmpty())
+        response400();
+    QByteArray methods;
+    methods.append(allowedMethods.takeFirst().toLatin1());
+    foreach(const QString method, allowedMethods)
+    {
+        methods.append(", "+method.toLatin1());
+    }
+    QByteArray ba = "HTTP/1.1 405 Method not allowed\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Allow: "+methods+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 201\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>405 Method not allowed</title>\r\n</head>\r\n<body>\r\n<h1>Method not allowed</h1>\r\n<p>The method for your request is not allowed on this resource</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response410()
+{
+    QByteArray ba = "HTTP/1.1 410 Gone\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 194\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>410 Gone</title>\r\n</head>\r\n<body>\r\n<h1>Gone</h1>\r\n<p>The requested resource has been permanently removed.</p>\r\n<p>Please remove all bookmarks and links for this resource</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response411()
+{
+    QByteArray ba = "HTTP/1.1 411 Length Required\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 217\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>411 Length required</title>\r\n</head>\r\n<body>\r\n<h1>Length required</h1>\r\n<p>The request did not contain a 'Content-Length' header, though this is a mandatory</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response412()
+{
+    QByteArray ba = "HTTP/1.1 412 Precondition failed\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 183\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>412 Precondition failed</title>\r\n</head>\r\n<body>\r\n<h1>Precondition failed</h1>\r\n<p>A precondition for this request failed.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response500()
+{
+    QByteArray ba = "HTTP/1.1 500 Server Error\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 162\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>500 Server Error</title>\r\n</head>\r\n<body>\r\n<h1>Server Error</h1>\r\n<p>The server encountered an error.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response501()
+{
+    QByteArray ba = "HTTP/1.1 501 Not Implemented\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 185\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>501 Not implemented</title>\r\n</head>\r\n<body>\r\n<h1>Not implemented</h1>\r\n<p>The requested operation is not (yet) implemented.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response502()
+{
+    QByteArray ba = "HTTP/1.1 502 Bad Gateway\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 172\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>502 Bad Gateway</title>\r\n</head>\r\n<body>\r\n<h1>Bad Gateway</h1>\r\n<p>Unexpected result on forwarding the request.</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response503()
+{
+    QByteArray ba = "HTTP/1.1 503 Service Unavailable\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 204\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>503 Service Unavailable</title>\r\n</head>\r\n<body>\r\n<h1>Service unavailable</h1>\r\n<p>The service is currently unavailable, please try again later</p>\r\n</body>\r\n</html>";
+    writeData(ba);
+}
+
+void LSHttpdRequestPrivate::response504()
+{
+    QByteArray ba = "HTTP/1.1 504 Gateway Timeout\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: 194\r\n"
+                    "\r\n"
+                    "<html>\r\n<head>\r\n<title>504 Gateway Timeout</title>\r\n</head>\r\n<body>\r\n<h1>Gateway Timeout</h1>\r\n<p>The server received a timeout upon forwarding the request.</p>\r\n</body>\r\n</html>";
     writeData(ba);
 }
 

@@ -20,9 +20,13 @@ int main(int argc, char *argv[])
     QObject::connect(res404fallback.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
         request->response404();
     });
-    auto res204 = h->registerResource(QRegularExpression("^/article$"));
+    auto res204 = h->registerResource(QRegularExpression("^/noContent$"));
     QObject::connect(res204.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
         request->response204();
+    });
+    auto res301 = h->registerResource(QRegularExpression("^/movedPerm$"));
+    QObject::connect(res301.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
+        request->response301("404.html");
     });
     auto resCustom = h->registerResource(QRegularExpression("^/index.html$"));
     QObject::connect(resCustom.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
