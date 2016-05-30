@@ -680,6 +680,7 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *so
     m_socket.reset(socket);
     m_requestComplete = false;
     m_responseComplete = false;
+    m_responseBytesLeftToWrite = 0;
 
     m_requestParserState = STATE_NULL;
     m_responseParserState = STATE_NULL;
