@@ -165,13 +165,17 @@ bool LSHttpdRequestPrivate::responseComplete() const
 
 int LSHttpdRequestPrivate::onNotificationNull(http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<"Notify";
+#endif
     return 0;
 }
 
 int LSHttpdRequestPrivate::onDataNull(http_parser *p, const char *at, size_t length)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<"Data:"<<QByteArray(at,length);
+#endif
     return 0;
 }
 
@@ -189,7 +193,9 @@ int LSHttpdRequestPrivate::onMessageBeginCB(http_parser *parser)
 
 int LSHttpdRequestPrivate::onMessageBegin(http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ");
+#endif
     if (p == &m_requestParser)
     {
         m_requestComplete = false;
@@ -215,7 +221,9 @@ int LSHttpdRequestPrivate::onUrlCB(http_parser *p, const char *at, size_t length
 
 int LSHttpdRequestPrivate::onUrl(QByteArray in, http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+#endif
     if (p == &m_requestParser)
     {
         m_requestParserState = STATE_URL;
@@ -243,7 +251,9 @@ int LSHttpdRequestPrivate::onStatusCB(http_parser *p, const char *at, size_t len
 
 int LSHttpdRequestPrivate::onStatus(QByteArray in, http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+#endif
     if (p == &m_requestParser)
     {
         m_requestParserState = STATE_STATUS;
@@ -272,7 +282,9 @@ int LSHttpdRequestPrivate::onHeaderFieldCB(http_parser *p, const char *at, size_
 
 int LSHttpdRequestPrivate::onHeaderField(QByteArray in, http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+#endif
     if (p == &m_requestParser)
     {
         if (m_requestParserState != STATE_HEADERFIELD)
@@ -308,7 +320,9 @@ int LSHttpdRequestPrivate::onHeaderValueCB(http_parser *p, const char *at, size_
 
 int LSHttpdRequestPrivate::onHeaderValue(QByteArray in, http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+#endif
     if (p == &m_requestParser)
     {
         m_requestParserState = STATE_HEADERVALUE;
@@ -355,7 +369,9 @@ int LSHttpdRequestPrivate::onBodyCB(http_parser *p, const char *at, size_t lengt
 
 int LSHttpdRequestPrivate::onBody(QByteArray in, http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ")<<in;
+#endif
     if (p == &m_requestParser)
     {
         m_requestParserState = STATE_BODY;
@@ -383,7 +399,9 @@ int LSHttpdRequestPrivate::onMessageCompleteWrapperCB(http_parser *parser)
 
 int LSHttpdRequestPrivate::onMessageComplete(http_parser *p)
 {
+#ifdef LSHTTPD_DEBUG
     qDebug()<<Q_FUNC_INFO<<"Parser: "<<(p==&m_requestParser?"Request: ":"Response: ");
+#endif
     if (p == &m_requestParser)
     {
         q_ptr->m_method = parserMethodToString(p->method);

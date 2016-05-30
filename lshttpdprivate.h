@@ -10,6 +10,8 @@
 #include <lshttpd.h>
 #include <http-parser/http_parser.h>
 
+//#define LSHTTPD_DEBUG
+
 class LSHttpdPrivate : public QTcpServer
 {
     Q_OBJECT
