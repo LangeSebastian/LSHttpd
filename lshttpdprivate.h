@@ -6,6 +6,7 @@
 #include <QSslSocket>
 #include <QList>
 #include <QMap>
+#include <QNetworkConfigurationManager>
 
 #include <lshttpd.h>
 #include <http-parser/http_parser.h>
@@ -29,9 +30,15 @@ public:
     QSharedPointer<LSHttpdResource> registerResource(QRegularExpression rx);
     void unregisterResource(QSharedPointer<LSHttpdResource> resource);
 
+private slots:
+    void networkConfigurationChanged(const QNetworkConfiguration &inConfig);
+
 protected:
     LSHttpd *q_ptr;
 
+    QHostAddress m_hostAddress;
+    quint16 m_port;
+    QScopedPointer<QNetworkConfigurationManager> m_ncm;
     QVector<LSHttpdRequest*> m_openRequests;
 
     QSharedPointer<LSHttpdResource> m_fallBackResource;

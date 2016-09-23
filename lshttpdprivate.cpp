@@ -5,6 +5,9 @@
 #include <QSslConfiguration>
 #include <QFile>
 #include <QStringList>
+#include <QNetworkInterface>
+#include <QNetworkAddressEntry>
+#include <QNetworkSession>
 
 #include <lshttpd.h>
 #include <lshttpdresource.h>
@@ -13,6 +16,12 @@ static QMap<http_parser*,LSHttpdRequest*> LSHTTPD_PARSER_MAP;
 
 LSHttpdPrivate::LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q) : QTcpServer(q), q_ptr(q)
 {
+    m_ncm.reset(new QNetworkConfigurationManager());
+    m_hostAddress = address;
+    m_port = port;
+
+    connect(m_ncm.data(),&QNetworkConfigurationManager::configurationAdded,this,&LSHttpdPrivate::networkConfigurationChanged);
+    connect(m_ncm.data(),&QNetworkConfigurationManager::configurationChanged,this,&LSHttpdPrivate::networkConfigurationChanged);
     listen(address,port);
 }
 
@@ -101,6 +110,41 @@ void LSHttpdPrivate::unregisterResource(QSharedPointer<LSHttpdResource> resource
     Q_ASSERT(resource.data());
     m_registeredResources.removeOne(resource);
     resource->invalidate();
+}
+
+void LSHttpdPrivate::networkConfigurationChanged(const QNetworkConfiguration &inConfig)
+{
+    if(inConfig.state() == QNetworkConfiguration::Active)
+    {
+        if(inConfig.type() != QNetworkConfiguration::Invalid)
+        {
+            QNetworkSession *ns = new QNetworkSession(inConfig);
+            QNetworkInterface ni = ns->interface();
+            QList<QNetworkAddressEntry> nl = ni.addressEntries();
+
+            for(auto it=nl.constBegin(), et=nl.constEnd();it!=et;++it)
+            {
+
+                if(m_hostAddress == QHostAddress::Any)
+                {
+                    if((*it).ip().protocol()==QAbstractSocket::AnyIPProtocol
+                            || (*it).ip().protocol()==QAbstractSocket::IPv4Protocol
+                            || (*it).ip().protocol()==QAbstractSocket::IPv6Protocol)
+                    {
+                        listen((*it).ip(),m_port);
+                    }
+                }
+                else
+                {
+                    if((*it).ip() == m_hostAddress)
+                    {
+                        listen(m_hostAddress,m_port);
+                    }
+                }
+            }
+            delete ns;
+        }
+    }
 }
 
 void LSHttpdPrivate::incomingConnection(qintptr handle)
