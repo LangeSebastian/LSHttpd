@@ -1,6 +1,7 @@
 #include "lshttpd.h"
 #include "lshttpdprivate.h"
 #include <QCryptographicHash>
+#include <QMetaEnum>
 
 LSHttpd::LSHttpd(QHostAddress address, quint16 port, bool useSSL) : d_ptr(new LSHttpdPrivate(address, port, useSSL, this))
 {
@@ -71,6 +72,19 @@ QString LSHttpdRequest::method() const
     return m_method;
 }
 
+LSHttpdRequest::RequestMethod LSHttpdRequest::methodId() const
+{
+    QMetaEnum metaEnum = QMetaEnum::fromType<RequestMethod>();
+    bool ok = false;
+    int ret;
+    ret = metaEnum.keyToValue(m_method.toLatin1().constData(),&ok);
+    if(!ok)
+    {
+        ret = OTHER;
+    }
+    return static_cast<RequestMethod>(ret);
+}
+
 int LSHttpdRequest::responseCode() const
 {
     return m_responseCode;
@@ -137,6 +151,7 @@ void LSHttpdRequest::response301(QByteArray redirectLocation)
 }
 
 void LSHttpdRequest::response302(QByteArray redirectLocation)
+
 {
     d_ptr->response302(redirectLocation);
 }
@@ -224,6 +239,106 @@ void LSHttpdRequest::response503()
 void LSHttpdRequest::response504()
 {
     d_ptr->response504();
+}
+
+void LSHttpdRequest::responseNoContent()
+{
+    response204();
+}
+
+void LSHttpdRequest::responseMovedPermanently(QByteArray redirectLocation)
+{
+    response301(redirectLocation);
+}
+
+void LSHttpdRequest::responseFound(QByteArray redirectLocation)
+{
+    response302(redirectLocation);
+}
+
+void LSHttpdRequest::responseSeeOther(QByteArray redirectLocation)
+{
+    response303(redirectLocation);
+}
+
+void LSHttpdRequest::responseNotModified(QDateTime modificationDate)
+{
+    response304(modificationDate);
+}
+
+void LSHttpdRequest::responseTemporaryRedirect(QByteArray redirectLocation)
+{
+    response307(redirectLocation);
+}
+
+void LSHttpdRequest::responseBadRequest()
+{
+    response400();
+}
+
+void LSHttpdRequest::responseBasicAuth(QByteArray realm)
+{
+    response401Basic(realm);
+}
+
+void LSHttpdRequest::responseDigetsAuth(QByteArray realm, QByteArray nonce)
+{
+    response401Digest(realm,nonce);
+}
+
+void LSHttpdRequest::responseForbidden()
+{
+    response403();
+}
+
+void LSHttpdRequest::responseNotFound()
+{
+    response404();
+}
+
+void LSHttpdRequest::responseMethodNotAllowed(QStringList allowedMethods)
+{
+    response405(allowedMethods);
+}
+
+void LSHttpdRequest::responseGone()
+{
+    response410();
+}
+
+void LSHttpdRequest::responseLengthRequired()
+{
+    response411();
+}
+
+void LSHttpdRequest::responsePreconditionFailed()
+{
+    response412();
+}
+
+void LSHttpdRequest::responseServerError()
+{
+    response500();
+}
+
+void LSHttpdRequest::responseNotImplemented()
+{
+    response501();
+}
+
+void LSHttpdRequest::responseBadGateway()
+{
+    response502();
+}
+
+void LSHttpdRequest::responseServiceUnavailable()
+{
+    response503();
+}
+
+void LSHttpdRequest::responseGateWayTimeout()
+{
+    response504();
 }
 
 QByteArray LSHttpdRequest::extractOption(QByteArray headerValue, QByteArray optionTag)

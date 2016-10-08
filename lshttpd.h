@@ -68,10 +68,22 @@ public:
         PreconditionFailed = 412,
         NotImplemented = 501            //Server Error Response 5xx
     };
+    Q_ENUM(ResponseCode)
+
+    enum RequestMethod : int {
+        GET = 0,
+        HEAD,
+        POST,
+        PUT,
+        DELETE,
+        OTHER
+    };
+    Q_ENUM(RequestMethod)
 
 private:
     QString m_resource;
     QString m_method;
+    RequestMethod m_methodId;
     int m_responseCode;
     QList<LSHttpdHeaderPair> m_requestHeaderList;
     QList<LSHttpdHeaderPair> m_responseHeaderList;
@@ -97,6 +109,7 @@ public:
     //Requested Url
     QString resource() const;
     QString method() const;
+    RequestMethod methodId() const;
 
     //Status Code Response
     int responseCode() const;
@@ -118,6 +131,7 @@ public:
 
     bool sendResponse();
 
+    // Code Responses
     void response204();
     void response301(QByteArray redirectLocation);
     void response302(QByteArray redirectLocation);
@@ -138,6 +152,29 @@ public:
     void response502();
     void response503();
     void response504();
+
+    // Named Responses proxy to Code Responses
+    void responseNoContent();
+    void responseMovedPermanently(QByteArray redirectLocation);
+    void responseFound(QByteArray redirectLocation);
+    void responseSeeOther(QByteArray redirectLocation);
+    void responseNotModified(QDateTime modificationDate);
+    void responseTemporaryRedirect(QByteArray redirectLocation);
+    void responseBadRequest();
+    void responseBasicAuth(QByteArray realm);
+    void responseDigetsAuth(QByteArray realm, QByteArray nonce);
+    void responseForbidden();
+    void responseNotFound();
+    void responseMethodNotAllowed(QStringList allowedMethods);
+    void responseGone();
+    void responseLengthRequired();
+    void responsePreconditionFailed();
+    void responseServerError();
+    void responseNotImplemented();
+    void responseBadGateway();
+    void responseServiceUnavailable();
+    void responseGateWayTimeout();
+
 
     QByteArray extractOption(QByteArray headerValue, QByteArray optionTag);
     QByteArray extractUser(QByteArray headerValue);

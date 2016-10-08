@@ -507,7 +507,7 @@ void LSHttpdRequestPrivate::response303(QByteArray redirectLocation)
 
 void LSHttpdRequestPrivate::response304(QDateTime modificationDate)
 {
-    QByteArray ba = "HTTP/1.1 303 Not Modified\r\n"
+    QByteArray ba = "HTTP/1.1 304 Not Modified\r\n"
                     "Date: "+modificationDate.toString(Qt::ISODate).toLatin1()+"\r\n"
                     "\r\n";
     writeData(ba);

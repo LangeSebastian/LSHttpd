@@ -4,12 +4,17 @@
 #
 #-------------------------------------------------
 
-QT       += network
+QT       += network core
 QT       -= gui
 
 CONFIG += c++11
 
+
 TARGET = LSHttpd
+CONFIG(debug, debug|release) {
+    TARGET = LSHttpdd
+}
+
 TEMPLATE = lib
 
 DEFINES += LSHTTPD_LIBRARY
