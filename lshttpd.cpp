@@ -140,6 +140,11 @@ bool LSHttpdRequest::sendResponse()
     return d_ptr->sendResponse();
 }
 
+void LSHttpdRequest::response200()
+{
+    d_ptr->response200();
+}
+
 void LSHttpdRequest::response204()
 {
     d_ptr->response204();
@@ -239,6 +244,11 @@ void LSHttpdRequest::response503()
 void LSHttpdRequest::response504()
 {
     d_ptr->response504();
+}
+
+void LSHttpdRequest::responseOk()
+{
+    response200();
 }
 
 void LSHttpdRequest::responseNoContent()

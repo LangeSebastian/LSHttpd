@@ -142,6 +142,7 @@ public:
     QByteArray requestRaw();
     QByteArray responseRaw();
 
+    void response200();
     void response204();
     void response301(QByteArray redirectLocation);
     void response302(QByteArray redirectLocation);

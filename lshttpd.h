@@ -132,6 +132,7 @@ public:
     bool sendResponse();
 
     // Code Responses
+    void response200();
     void response204();
     void response301(QByteArray redirectLocation);
     void response302(QByteArray redirectLocation);
@@ -154,6 +155,7 @@ public:
     void response504();
 
     // Named Responses proxy to Code Responses
+    void responseOk();
     void responseNoContent();
     void responseMovedPermanently(QByteArray redirectLocation);
     void responseFound(QByteArray redirectLocation);

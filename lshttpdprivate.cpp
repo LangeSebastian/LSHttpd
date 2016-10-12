@@ -470,6 +470,14 @@ QByteArray LSHttpdRequestPrivate::responseRaw()
     return m_responseData;
 }
 
+void LSHttpdRequestPrivate::response200()
+{
+    QByteArray ba = "HTTP/1.1 204 No Content\r\n"
+                    "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
+                    "\r\n";
+    writeData(ba);
+}
+
 void LSHttpdRequestPrivate::response204()
 {
     QByteArray ba = "HTTP/1.1 204 No Content\r\n"
