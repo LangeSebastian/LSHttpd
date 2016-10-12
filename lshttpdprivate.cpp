@@ -584,7 +584,10 @@ void LSHttpdRequestPrivate::response404()
 void LSHttpdRequestPrivate::response405(QStringList allowedMethods)
 {
     if(allowedMethods.isEmpty())
+    {
         response400();
+        return;
+    }
     QByteArray methods;
     methods.append(allowedMethods.takeFirst().toLatin1());
     foreach(const QString method, allowedMethods)
