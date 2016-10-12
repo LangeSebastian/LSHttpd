@@ -140,6 +140,69 @@ bool LSHttpdRequest::sendResponse()
     return d_ptr->sendResponse();
 }
 
+bool LSHttpdRequest::responseDefault(int responseCode)
+{
+    switch(responseCode)
+    {
+        case 200:
+            response200();
+            return true;
+            break;
+        case 204:
+            response204();
+            return true;
+            break;
+        case 400:
+            response400();
+            return true;
+            break;
+        case 403:
+            response403();
+            return true;
+            break;
+        case 404:
+            response404();
+            return true;
+            break;
+        case 410:
+            response410();
+            return true;
+            break;
+        case 411:
+            response411();
+            return true;
+            break;
+        case 412:
+            response412();
+            return true;
+            break;
+        case 500:
+            response500();
+            return true;
+            break;
+        case 501:
+            response501();
+            return true;
+            break;
+        case 502:
+            response502();
+            return true;
+            break;
+        case 503:
+            response503();
+            return true;
+            break;
+        case 504:
+            response504();
+            return true;
+            break;
+        default:
+            return false;
+            break;
+    }
+    return false;
+}
+
 void LSHttpdRequest::response200()
 {
     d_ptr->response200();
