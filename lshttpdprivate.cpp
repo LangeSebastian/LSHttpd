@@ -856,11 +856,12 @@ void LSHttpdRequestPrivate::createResponse(int in_status, QList<LSHttpdHeaderPai
         {
             m_responseData.append(QString("Content-Length: %1\r\n").arg(in_bodyData.size()));
         }
-        if(!hasDate)
-        {
-            m_responseData.append(QString("Date: %1\r\n").arg(QDateTime::currentDateTime().toString(Qt::ISODate)));
-        }
     }
+    if(!hasDate)
+    {
+        m_responseData.append(QString("Date: %1\r\n").arg(QDateTime::currentDateTime().toString(Qt::ISODate)));
+    }
+
     m_responseData.append("\r\n");
     m_responseData.append(in_bodyData);
 }
