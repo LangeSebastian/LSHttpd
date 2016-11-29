@@ -837,12 +837,17 @@ void LSHttpdRequestPrivate::createResponse(int in_status, QList<LSHttpdHeaderPai
     m_responseData.clear();
     m_responseData.append(QString("HTTP/1.1 %1\r\n").arg(in_status));
     bool hasContentLength = false;
+    bool hasDate = false;
     for(auto it = in_headerList.constBegin(), et = in_headerList.constEnd(); it!=et; ++it)
     {
         m_responseData.append(it->first).append(": ").append(it->second).append("\r\n");
-        if(it->first.compare("Content-Length",Qt::CaseInsensitive) == 0)
+        if(Q_UNLIKELY(it->first.compare("Content-Length",Qt::CaseInsensitive) == 0))
         {
             hasContentLength = true;
+        }
+        if(Q_UNLIKELY(it->first.compare("Date",Qt::CaseInsensitive) == 0))
+        {
+            hasDate = true;
         }
     }
     if(in_bodyData.size())
@@ -850,6 +855,10 @@ void LSHttpdRequestPrivate::createResponse(int in_status, QList<LSHttpdHeaderPai
         if(!hasContentLength)
         {
             m_responseData.append(QString("Content-Length: %1\r\n").arg(in_bodyData.size()));
+        }
+        if(!hasDate)
+        {
+            m_responseData.append(QString("Date: %1\r\n").arg(QDateTime::currentDateTime().toString(Qt::ISODate)));
         }
     }
     m_responseData.append("\r\n");
