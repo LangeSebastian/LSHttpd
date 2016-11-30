@@ -1,7 +1,7 @@
 #ifndef LSHTTPDRESOURCE_H
 #define LSHTTPDRESOURCE_H
 
-#include <lshttpd_global.h>
+#include "lshttpd_global.h"
 
 #include <QRegularExpression>
 #include <QObject>

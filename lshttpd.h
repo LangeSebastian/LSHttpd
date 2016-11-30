@@ -68,9 +68,6 @@ public:
         PreconditionFailed = 412,
         NotImplemented = 501            //Server Error Response 5xx
     };
-#ifndef LS_COMPATIBILITY_MODE_QT53
-    Q_ENUM(ResponseCode)
-#endif
 
     enum RequestMethod : int {
         GET = 0,
@@ -80,9 +77,6 @@ public:
         DELETE,
         OTHER
     };
-#ifndef LS_COMPATIBILITY_MODE_QT53
-    Q_ENUM(RequestMethod)
-#endif
 
 private:
     QString m_resource;

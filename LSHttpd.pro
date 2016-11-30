@@ -10,13 +10,19 @@ QT       -= gui
 CONFIG += c++11
 
 lessThan(QT_MAJOR_VERSION, 5) {
-    message(This library requires Qt version > 5.3)
+    message(This library requires Qt version >= 5.3)
 }
 
 equals(QT_MAJOR_VERSION, 5) {
     lessThan(QT_MINOR_VERSION, 5) {
-        message(Compatibility mode for Qt version < 5.5)
-        DEFINES += LS_COMPATIBILITY_MODE_QT53
+        lessThan(QT_MINOR_VERSION, 3) {
+            message(This library requires Qt version >= 5.3)
+        }
+        else
+        {
+            message(Compatibility mode for Qt version < 5.5)
+            DEFINES += LS_COMPATIBILITY_MODE_QT53
+        }
     }
 }
 

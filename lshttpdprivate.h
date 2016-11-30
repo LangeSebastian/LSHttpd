@@ -12,7 +12,7 @@
 #include <http-parser/http_parser.h>
 
 //#define LSHTTPD_DEBUG
-
+class LSHttpd;
 class LSHttpdPrivate : public QTcpServer
 {
     Q_OBJECT
