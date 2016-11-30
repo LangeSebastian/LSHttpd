@@ -48,7 +48,7 @@ void LSHttpd::unregisterResource(QSharedPointer<LSHttpdResource> resource)
     d_ptr->unregisterResource(resource);
 }
 
-LSHttpdRequest::LSHttpdRequest(QSslSocket *socket, QObject *parent) : QObject(parent), d_ptr(new LSHttpdRequestPrivate(this, socket))
+LSHttpdRequest::LSHttpdRequest(QTcpSocket *socket, QObject *parent) : QObject(parent), d_ptr(new LSHttpdRequestPrivate(this, socket))
 {
 }
 

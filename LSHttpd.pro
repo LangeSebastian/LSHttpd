@@ -9,6 +9,16 @@ QT       -= gui
 
 CONFIG += c++11
 
+lessThan(QT_MAJOR_VERSION, 5) {
+    message(This library requires Qt version > 5.3)
+}
+
+equals(QT_MAJOR_VERSION, 5) {
+    lessThan(QT_MINOR_VERSION, 5) {
+        message(Compatibility mode for Qt version < 5.5)
+        DEFINES += LS_COMPATIBILITY_MODE_QT53
+    }
+}
 
 TARGET = LSHttpd
 CONFIG(debug, debug|release) {
@@ -24,12 +34,11 @@ SOURCES += lshttpd.cpp \
     http-parser/http_parser.c \
     lshttpdresource.cpp
 
-HEADERS += lshttpd.h\
+HEADERS += lshttpd.h \
         lshttpd_global.h \
         lshttpdprivate.h \
         http-parser/http_parser.h \
     lshttpdresource.h
-
 
 unix {
     target.path = /usr/lib

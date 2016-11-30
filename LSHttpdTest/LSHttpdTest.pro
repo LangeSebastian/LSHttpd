@@ -11,14 +11,16 @@ TEMPLATE = app
 
 CONFIG(debug, debug|release){
     DESTDIR = ../debug
+    LIBS += -L$$DESTDIR -llshttpdd
 }
 
 CONFIG(release, debug|release){
     DESTDIR = ../release
+    LIBS += -L$$DESTDIR -llshttpd
 }
 
 INCLUDEPATH += $$_PRO_FILE_PWD_/..
-LIBS += -L$$DESTDIR -llshttpd
+
 
 SOURCES += main.cpp
 

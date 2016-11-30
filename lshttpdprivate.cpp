@@ -14,7 +14,7 @@
 
 static QMap<http_parser*,LSHttpdRequest*> LSHTTPD_PARSER_MAP;
 
-LSHttpdPrivate::LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q) : QTcpServer(q), q_ptr(q)
+LSHttpdPrivate::LSHttpdPrivate(QHostAddress address, quint16 port, bool useSSL, LSHttpd *q) : QTcpServer(q), q_ptr(q), m_useSSL(useSSL)
 {
     m_ncm.reset(new QNetworkConfigurationManager());
     m_hostAddress = address;
@@ -149,20 +149,29 @@ void LSHttpdPrivate::networkConfigurationChanged(const QNetworkConfiguration &in
 
 void LSHttpdPrivate::incomingConnection(qintptr handle)
 {
-    QSslSocket* s = new QSslSocket;
-    s->setSslConfiguration(QSslConfiguration::defaultConfiguration());
-    s->setLocalCertificate(m_sslCert);
-    s->setPrivateKey(m_sslKey);
-    if(Q_LIKELY(s->setSocketDescriptor(handle)))
+    QTcpSocket *socket;
+    if(m_useSSL)
     {
-        LSHttpdRequest *request = new LSHttpdRequest(s);
+        QSslSocket* s = new QSslSocket;
+        s->setSslConfiguration(QSslConfiguration::defaultConfiguration());
+        s->setLocalCertificate(m_sslCert);
+        s->setPrivateKey(m_sslKey);
+        socket = s;
+    }
+    else
+    {
+        socket = new QTcpSocket;
+    }
+    if(Q_LIKELY(socket->setSocketDescriptor(handle)))
+    {
+        LSHttpdRequest *request = new LSHttpdRequest(socket);
         LSHTTPD_PARSER_MAP.insert(request->d_ptr->requestParser(),request);
         LSHTTPD_PARSER_MAP.insert(request->d_ptr->responseParser(),request);
         m_openRequests.append(request);
         connect(request,&LSHttpdRequest::requestFinished,this,&LSHttpdPrivate::removeRequest);
         connect(request->d_ptr,&LSHttpdRequestPrivate::requestCompleted,this,&LSHttpdPrivate::mapRequestToResource);
     }else{
-        delete s;
+        delete socket;
     }
 }
 
@@ -572,12 +581,15 @@ void LSHttpdRequestPrivate::response403()
 
 void LSHttpdRequestPrivate::response404()
 {
+    QByteArray content = "<html>\r\n<head>\r\n<title>404 Document not found</title>\r\n</head>\r\n<body>\r\n<h1>Document not found</h1>\r\n<p>The requested resource does not exist on this server</p>\r\n</body>\r\n</html>";
     QByteArray ba = "HTTP/1.1 404 Not Found\r\n"
                     "Date: "+QDateTime::currentDateTime().toString(Qt::ISODate).toLatin1()+"\r\n"
                     "Content-Type: text/html; charset=UTF-8\r\n"
-                    "Content-Length: 194\r\n"
-                    "\r\n"
-                    "<html>\r\n<head>\r\n<title>404 Document not found</title>\r\n</head>\r\n<body>\r\n<h1>Document not found</h1>\r\n<p>The requested resource does not exist on this server</p>\r\n</body>\r\n</html>";
+                    "Content-Length: ";
+    ba.append(QString::number(content.size()).toLatin1());
+    ba.append("\r\n\r\n");
+    ba.append(content);
+
     writeData(ba);
 }
 
@@ -747,7 +759,7 @@ QString LSHttpdRequestPrivate::parserMethodToString(int method)
     return QString();
 }
 
-LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *socket) : QObject(ptr), q_ptr(ptr)
+LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* socket) : QObject(ptr), q_ptr(ptr)
 {
     Q_ASSERT(socket);
     m_socket.reset(socket);
@@ -783,28 +795,53 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket *so
     http_parser_init(&m_requestParser, HTTP_REQUEST);
     http_parser_init(&m_responseParser, HTTP_RESPONSE);
 
+    QSslSocket* sslSocket = qobject_cast<QSslSocket*>(socket);
+    if(sslSocket != Q_NULLPTR)
+    {
+#ifdef LSHTTPD_DEBUG
+        qDebug()<<"Socket is SSL Socket";
+#endif
+        connect(sslSocket,&QSslSocket::encrypted, this, [=](){
+            connect(sslSocket,&QSslSocket::readyRead,this,&LSHttpdRequestPrivate::onSocketReadyRead);
+        });
 
-    connect(socket,&QSslSocket::encrypted, this, [=](){
-        connect(socket,&QSslSocket::readyRead,this,&LSHttpdRequestPrivate::onSocketReadyRead);
-    });
+        //TODO Currently we ignore SSL Errors
+        connect(sslSocket,static_cast<void (QSslSocket::*)(const QList<QSslError> &)>(&QSslSocket::sslErrors),this,[=](){
+            qDebug()<<"Socket SSLErrors:"<<static_cast<QSslSocket*>(socket)->sslErrors();
+            sslSocket->ignoreSslErrors();
+        });
 
-    //TODO Currently we ignore SSL Errors
-    connect(socket,static_cast<void (QSslSocket::*)(const QList<QSslError> &)>(&QSslSocket::sslErrors),this,[=](){
-        qDebug()<<"Socket SSLErrors:"<<socket->sslErrors();
-        socket->ignoreSslErrors();
-    });
+        //Error in Socket => close socket and request
+        connect(sslSocket,static_cast<void (QSslSocket::*)(QAbstractSocket::SocketError)>(&QSslSocket::error),this,[=](){
+            qDebug()<<"Socket Error:"<<socket->error();
+            closeRequest();
+        });
 
-    //Error in Socket => close socket and request
-    connect(socket,static_cast<void (QSslSocket::*)(QAbstractSocket::SocketError)>(&QSslSocket::error),this,[=](){
-        qDebug()<<"Socket Error:"<<socket->error();
-        closeRequest();
-    });
+        //Client disconnects before request is finished => just close request
+        connect(socket,&QSslSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
 
-    //Client disconnects before request is finished => just close request
-    connect(socket,&QSslSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
-
-    connect(socket,&QSslSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
-    socket->startServerEncryption();
+        connect(socket,&QSslSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
+        sslSocket->startServerEncryption();
+    }
+    else
+    {
+#ifdef LSHTTPD_DEBUG
+        qDebug()<<"Socket is TCP Socket";
+#endif
+        connect(socket,&QTcpSocket::readyRead,this,&LSHttpdRequestPrivate::onSocketReadyRead);
+        //Error in Socket => close socket and request
+        connect(socket,static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),this,[=](){
+            qDebug()<<"Socket Error:"<<socket->error();
+            closeRequest();
+        });
+        //Client disconnects before request is finished => just close request
+        connect(socket,&QTcpSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
+        connect(socket,&QTcpSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
+        if(socket->bytesAvailable())
+        {
+            QMetaObject::invokeMethod(this,"onSocketReadyRead");
+        }
+    }
 }
 
 LSHttpdRequestPrivate::~LSHttpdRequestPrivate()

@@ -35,6 +35,7 @@ private slots:
 
 protected:
     LSHttpd *q_ptr;
+    bool m_useSSL;
 
     QHostAddress m_hostAddress;
     quint16 m_port;
@@ -66,7 +67,7 @@ class LSHttpdRequestPrivate : public QObject
         STATE_BODY
     };
     LSHttpdRequest *q_ptr;
-    QScopedPointer<QSslSocket> m_socket;
+    QScopedPointer<QTcpSocket> m_socket;
 
     http_parser m_requestParser;
     http_parser_settings m_requestParserSettings;
@@ -94,7 +95,8 @@ class LSHttpdRequestPrivate : public QObject
 
     QString parserMethodToString(int method);
 public:
-    LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);
+    LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* socket);
+    //LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);
     ~LSHttpdRequestPrivate();
 
     http_parser* requestParser();
