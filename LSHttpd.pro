@@ -21,7 +21,6 @@ equals(QT_MAJOR_VERSION, 5) {
         else
         {
             message(Compatibility mode for Qt version < 5.5)
-            DEFINES += LS_COMPATIBILITY_MODE_QT53
         }
     }
 }

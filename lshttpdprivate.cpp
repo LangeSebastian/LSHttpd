@@ -107,7 +107,7 @@ QSharedPointer<LSHttpdResource> LSHttpdPrivate::registerResource(QRegularExpress
 void LSHttpdPrivate::unregisterResource(QSharedPointer<LSHttpdResource> resource)
 {
     Q_ASSERT(resource.data());
-#ifdef LS_COMPATIBILITY_MODE_QT53
+#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
     m_registeredResources.takeAt(m_registeredResources.indexOf(resource));
 #else
     m_registeredResources.removeOne(resource);
@@ -183,7 +183,7 @@ void LSHttpdPrivate::removeRequest()
     LSHttpdRequest *request = static_cast<LSHttpdRequest*>(sender());
     LSHTTPD_PARSER_MAP.remove(request->d_ptr->requestParser());
     LSHTTPD_PARSER_MAP.remove(request->d_ptr->responseParser());
-#ifdef LS_COMPATIBILITY_MODE_QT53
+#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
     m_openRequests.takeAt(m_openRequests.indexOf(request));
 #else
     m_openRequests.removeOne(request);

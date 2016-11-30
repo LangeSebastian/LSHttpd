@@ -68,6 +68,11 @@ public:
         PreconditionFailed = 412,
         NotImplemented = 501            //Server Error Response 5xx
     };
+#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
+    Q_ENUMS(LSHttpdRequest::ResponseCode)
+#else
+    Q_ENUM(LSHttpdRequest::ResponseCode)
+#endif
 
     enum RequestMethod : int {
         GET = 0,
@@ -77,6 +82,11 @@ public:
         DELETE,
         OTHER
     };
+#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
+    Q_ENUMS(LSHttpdRequest::RequestMethod)
+#else
+    Q_ENUM(LSHttpdRequest::RequestMethod)
+#endif
 
 private:
     QString m_resource;

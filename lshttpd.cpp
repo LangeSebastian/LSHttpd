@@ -3,19 +3,6 @@
 #include <QCryptographicHash>
 #include <QMetaEnum>
 
-#ifdef LS_COMPATIBILITY_MODE_QT53
-    Q_ENUMS(LSHttpdRequest::ResponseCode)
-#else
-    Q_ENUM(LSHttpdRequest::ResponseCode)
-#endif
-
-#ifdef LS_COMPATIBILITY_MODE_QT53
-    Q_ENUMS(LSHttpdRequest::RequestMethod)
-#else
-    Q_ENUM(LSHttpdRequest::RequestMethod)
-#endif
-
-
 LSHttpd::LSHttpd(QHostAddress address, quint16 port, bool useSSL) : d_ptr(new LSHttpdPrivate(address, port, useSSL, this))
 {
 
@@ -87,7 +74,7 @@ QString LSHttpdRequest::method() const
 
 LSHttpdRequest::RequestMethod LSHttpdRequest::methodId() const
 {
-#ifdef LS_COMPATIBILITY_MODE_QT53
+#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
     const QMetaObject *mo = this->metaObject();
     int index = mo->indexOfEnumerator("RequestMethod");
     QMetaEnum metaEnum = mo->enumerator(index);
