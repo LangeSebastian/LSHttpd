@@ -464,6 +464,9 @@ int LSHttpdRequestPrivate::onMessageComplete(http_parser *p)
 #endif
     if (p == &m_requestParser)
     {
+#ifdef LSHTTPD_DEBUG
+        qDebug()<<Q_FUNC_INFO<<"Error: "<<p->http_errno;
+#endif
         q_ptr->m_method = parserMethodToString(p->method);
         q_ptr->m_methodId = parserMethodToEnum(p->method);
         m_requestComplete = true;
@@ -714,10 +717,11 @@ void LSHttpdRequestPrivate::response504()
 
 void LSHttpdRequestPrivate::onSocketReadyRead()
 {
-    m_requestData.append(m_socket->readAll());
+    QByteArray newData = m_socket->readAll();
+    m_requestData.append(newData);
 
     //Parser for request data
-    http_parser_execute(&m_requestParser,&m_requestParserSettings,m_requestData.data(),m_requestData.size());
+    http_parser_execute(&m_requestParser,&m_requestParserSettings,newData.data(),m_requestData.size());
 }
 
 void LSHttpdRequestPrivate::bytesWritten(qint64 bytes)
@@ -795,6 +799,7 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
 {
     Q_ASSERT(socket);
     m_socket.reset(socket);
+
     m_requestComplete = false;
     m_responseComplete = false;
     m_responseBytesLeftToWrite = 0;
@@ -958,6 +963,7 @@ bool LSHttpdRequestPrivate::sendResponse()
     {
         if(!validateResponse())
         {
+            int error = m_responseParser.http_errno;
             return false;
         }
     }

@@ -7,6 +7,8 @@
 #include <QFile>
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QJsonObject>
+#include <QJsonDocument>
 
 int main(int argc, char *argv[])
 {
@@ -16,9 +18,41 @@ int main(int argc, char *argv[])
     h->setCertificate("LSHttpd.crt");
     h->setPrivateKey("LSHttpd.key");
 
+    QFile file("logfile");
+    if(!file.open(QFile::WriteOnly))
+    {
+        qDebug()<<"Cannot open logfile";
+        return 0;
+    }
+
+
     auto res404fallback = h->registerFallback();
-    QObject::connect(res404fallback.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
-        request->response404();
+    QObject::connect(res404fallback.data(),&LSHttpdResource::pendingRequest,[=, &file](LSHttpdRequest* request){
+
+        file.write(request->requestRaw());
+        file.write("-----------------------------------------------------\0");
+        file.flush();
+
+        QList<LSHttpdHeaderPair> list = request->requestHeaderList();
+        QJsonObject o;
+        for(auto i : list)
+        {
+            o.insert(i.first,i.second);
+        }
+        QJsonObject root;
+        root.insert("headers", o);
+        root.insert("body", QJsonValue(QString::fromLocal8Bit(request->requestBodyData())));
+
+        list.clear();
+        QByteArray body = QJsonDocument(root).toJson();
+        list.append(LSHttpdHeaderPair("Content-Length",QString::number(body.size())));
+        request->createResponse(LSHttpdRequest::OK,list,body);
+        if(!request->sendResponse())
+        {
+            qDebug()<<Q_FUNC_INFO<<"Error";
+        }
+
+//        request->response404();
     });
     auto res204 = h->registerResource(QRegularExpression("^/noContent$"));
     QObject::connect(res204.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
