@@ -66,7 +66,10 @@ public:
         Gone = 410,
         ContentLengthRequired = 411,
         PreconditionFailed = 412,
-        NotImplemented = 501            //Server Error Response 5xx
+        NotImplemented = 501,            //Server Error Response 5xx
+        BadGateway = 502,
+        ServerError = 503,
+        GatewayTimeout = 504
     };
 #if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
     Q_ENUMS(LSHttpdRequest::ResponseCode)
