@@ -94,6 +94,7 @@ class LSHttpdRequestPrivate : public QObject
     friend class LSHttpdPrivate;
 
     QString parserMethodToString(int method);
+    LSHttpdRequest::RequestMethod parserMethodToEnum(int method);
 public:
     LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* socket);
     //LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);

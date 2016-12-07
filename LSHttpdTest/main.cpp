@@ -79,8 +79,17 @@ int main(int argc, char *argv[])
                 request->sendResponse();
                 file.close();
             }
+        }else{
+            request->response404();
         }
     });
+
+    auto resMirror = h->registerResource(QRegularExpression("^/mirror$"));
+    QObject::connect(resMirror.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
+        request->createResponse(LSHttpdRequest::OK,request->requestHeaderList(),request->requestBodyData());
+        request->sendResponse();
+    });
+
 
     return a.exec();
 }

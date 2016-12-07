@@ -465,6 +465,7 @@ int LSHttpdRequestPrivate::onMessageComplete(http_parser *p)
     if (p == &m_requestParser)
     {
         q_ptr->m_method = parserMethodToString(p->method);
+        q_ptr->m_methodId = parserMethodToEnum(p->method);
         m_requestComplete = true;
         emit requestCompleted(q_ptr);
     }
@@ -764,6 +765,30 @@ QString LSHttpdRequestPrivate::parserMethodToString(int method)
 #undef XX
     }
     return QString();
+}
+
+LSHttpdRequest::RequestMethod LSHttpdRequestPrivate::parserMethodToEnum(int method)
+{
+    switch (method) {
+        case HTTP_GET:
+            return LSHttpdRequest::GET;
+            break;
+        case HTTP_HEAD:
+            return LSHttpdRequest::HEAD;
+            break;
+        case HTTP_POST:
+            return LSHttpdRequest::POST;
+            break;
+        case HTTP_PUT:
+            return LSHttpdRequest::PUT;
+            break;
+        case HTTP_DELETE:
+            return LSHttpdRequest::DELETE;
+            break;
+        default:
+            return LSHttpdRequest::OTHER;
+            break;
+    }
 }
 
 LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* socket) : QObject(ptr), q_ptr(ptr)
