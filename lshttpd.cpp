@@ -74,22 +74,7 @@ QString LSHttpdRequest::method() const
 
 LSHttpdRequest::RequestMethod LSHttpdRequest::methodId() const
 {
-#if (QT_VERSION < QT_VERSION_CHECK(5,5,0))
-    const QMetaObject *mo = this->metaObject();
-    int index = mo->indexOfEnumerator("RequestMethod");
-    QMetaEnum metaEnum = mo->enumerator(index);
-#else
-    QMetaEnum metaEnum = QMetaEnum::fromType<RequestMethod>();
-#endif
-
-    bool ok = false;
-    int ret;
-    ret = metaEnum.keyToValue(m_method.toLatin1().constData(),&ok);
-    if(!ok)
-    {
-        ret = OTHER;
-    }
-    return static_cast<RequestMethod>(ret);
+    return m_methodId;
 }
 
 int LSHttpdRequest::responseCode() const
