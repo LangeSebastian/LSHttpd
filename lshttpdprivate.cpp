@@ -850,7 +850,7 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
 
         //Error in Socket => close socket and request
         connect(sslSocket,static_cast<void (QSslSocket::*)(QAbstractSocket::SocketError)>(&QSslSocket::error),this,[=](){
-            qDebug()<<"Socket Error:"<<socket->error();
+            qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
             closeRequest();
         });
 
@@ -868,7 +868,7 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
         connect(socket,&QTcpSocket::readyRead,this,&LSHttpdRequestPrivate::onSocketReadyRead);
         //Error in Socket => close socket and request
         connect(socket,static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),this,[=](){
-            qDebug()<<"Socket Error:"<<socket->error();
+            qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
             closeRequest();
         });
         //Client disconnects before request is finished => just close request
