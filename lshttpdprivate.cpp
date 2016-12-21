@@ -727,7 +727,7 @@ void LSHttpdRequestPrivate::onSocketReadyRead()
     m_requestData.append(newData);
 
     //Parser for request data
-    http_parser_execute(&m_requestParser,&m_requestParserSettings,newData.data(),m_requestData.size());
+    http_parser_execute(&m_requestParser,&m_requestParserSettings,newData.constData(),newData.size());
 }
 
 void LSHttpdRequestPrivate::bytesWritten(qint64 bytes)
