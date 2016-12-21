@@ -752,6 +752,14 @@ void LSHttpdRequestPrivate::writeDataSocket(QByteArray ba)
         m_socket->write(ba);
         m_socket->flush();
     }
+    else
+    {
+        m_responseBytesLeftToWrite -= ba.size();
+        if(m_responseBytesLeftToWrite <= 0)
+        {
+            closeRequest();
+        }
+    }
 }
 
 void LSHttpdRequestPrivate::closeSocket()
