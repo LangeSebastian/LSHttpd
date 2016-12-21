@@ -225,6 +225,7 @@ bool LSHttpdRequestPrivate::responseComplete() const
 
 int LSHttpdRequestPrivate::onNotificationNull(http_parser *p)
 {
+    Q_UNUSED(p);
 #ifdef LSHTTPD_DEBUG
     qDebug()<<"Notify";
 #endif
@@ -233,8 +234,12 @@ int LSHttpdRequestPrivate::onNotificationNull(http_parser *p)
 
 int LSHttpdRequestPrivate::onDataNull(http_parser *p, const char *at, size_t length)
 {
+    Q_UNUSED(p);
 #ifdef LSHTTPD_DEBUG
     qDebug()<<"Data:"<<QByteArray(at,length);
+#else
+    Q_UNUSED(at);
+    Q_UNUSED(length);
 #endif
     return 0;
 }
@@ -411,6 +416,7 @@ int LSHttpdRequestPrivate::onHeaderCompleteCB(http_parser *p)
 
 int LSHttpdRequestPrivate::onHeaderComplete(http_parser *p)
 {
+    Q_UNUSED(p);
     //NOTE: Nothing to do on header complete?
     return 0;
 }
@@ -741,8 +747,11 @@ void LSHttpdRequestPrivate::writeData(QByteArray ba)
 
 void LSHttpdRequestPrivate::writeDataSocket(QByteArray ba)
 {
-    m_socket->write(ba);
-    m_socket->flush();
+    if(m_socket->isOpen() && m_socket->state() == QAbstractSocket::ConnectedState)
+    {
+        m_socket->write(ba);
+        m_socket->flush();
+    }
 }
 
 void LSHttpdRequestPrivate::closeSocket()
@@ -854,9 +863,6 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
             closeRequest();
         });
 
-        //Client disconnects before request is finished => just close request
-        connect(socket,&QSslSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
-
         connect(socket,&QSslSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
         sslSocket->startServerEncryption();
     }
@@ -871,8 +877,6 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
             qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
             closeRequest();
         });
-        //Client disconnects before request is finished => just close request
-        connect(socket,&QTcpSocket::disconnected,this,&LSHttpdRequestPrivate::closeRequest);
         connect(socket,&QTcpSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
         if(socket->bytesAvailable())
         {
@@ -963,7 +967,6 @@ bool LSHttpdRequestPrivate::sendResponse()
     {
         if(!validateResponse())
         {
-            int error = m_responseParser.http_errno;
             return false;
         }
     }
