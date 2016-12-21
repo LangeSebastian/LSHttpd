@@ -7,6 +7,7 @@
 #include <QNetworkInterface>
 #include <QNetworkAddressEntry>
 #include <QNetworkSession>
+#include <QMetaMethod>
 
 #include <lshttpd.h>
 #include <lshttpdresource.h>
@@ -867,8 +868,11 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
 
         //Error in Socket => close socket and request
         connect(sslSocket,static_cast<void (QSslSocket::*)(QAbstractSocket::SocketError)>(&QSslSocket::error),this,[=](){
-            qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
-            closeRequest();
+            if(!isSignalConnected(QMetaMethod::fromSignal(&LSHttpdRequestPrivate::requestCompleted)))
+            {
+                qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
+                closeRequest();
+            }
         });
 
         connect(socket,&QSslSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
@@ -882,8 +886,11 @@ LSHttpdRequestPrivate::LSHttpdRequestPrivate(LSHttpdRequest *ptr, QTcpSocket* so
         connect(socket,&QTcpSocket::readyRead,this,&LSHttpdRequestPrivate::onSocketReadyRead);
         //Error in Socket => close socket and request
         connect(socket,static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),this,[=](){
-            qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
-            closeRequest();
+            if(!isSignalConnected(QMetaMethod::fromSignal(&LSHttpdRequestPrivate::requestCompleted)))
+            {
+                qDebug()<<Q_FUNC_INFO<<"Socket Error:"<<socket->errorString()<<"("<<socket->error()<<")";
+                closeRequest();
+            }
         });
         connect(socket,&QTcpSocket::bytesWritten,this,&LSHttpdRequestPrivate::bytesWritten);
         if(socket->bytesAvailable())
