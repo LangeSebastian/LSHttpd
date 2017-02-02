@@ -120,7 +120,7 @@ public:
     //Requested Url
     QString resource() const;
     QString method() const;
-	QString method(LSHttpdRequest::RequestMethod key) const;
+    QString method(LSHttpdRequest::RequestMethod key) const;
     RequestMethod methodId() const;
 
     //Status Code Response
