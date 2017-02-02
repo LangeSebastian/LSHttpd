@@ -72,6 +72,33 @@ QString LSHttpdRequest::method() const
     return m_method;
 }
 
+QString LSHttpdRequest::method(LSHttpdRequest::RequestMethod key) const
+{
+    switch (key) {
+        case GET:
+            return "GET";
+            break;
+        case HEAD:
+            return "HEAD";
+            break;
+        case POST:
+            return "POST";
+            break;
+        case PUT:
+            return "PUT";
+            break;
+        case DELETE:
+            return "DELETE";
+            break;
+        case OTHER:
+        default:
+            return "OTHER";
+            break;
+    }
+
+    return QString();
+}
+
 LSHttpdRequest::RequestMethod LSHttpdRequest::methodId() const
 {
     return m_methodId;

@@ -58,6 +58,9 @@ class LSHttpdRequestPrivate : public QObject
 {
     Q_OBJECT
 
+	friend class LSHttpdPrivate;
+	friend class LSHttpdRequest;
+
     enum ParserState : int {
         STATE_NULL = 0,
         STATE_STATUS,
@@ -90,8 +93,6 @@ class LSHttpdRequestPrivate : public QObject
 
     void closeSocket();
     void closeRequest();
-
-    friend class LSHttpdPrivate;
 
     QString parserMethodToString(int method);
     LSHttpdRequest::RequestMethod parserMethodToEnum(int method);
