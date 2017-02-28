@@ -943,9 +943,9 @@ void LSHttpdRequestPrivate::createResponse(int in_status, QList<LSHttpdHeaderPai
             hasDate = true;
         }
     }
-	if(!hasContentLength)
-	{
-		m_responseData.append(QString("Content-Length: %1\r\n").arg(in_bodyData.size()));
+    if(!hasContentLength)
+    {
+        m_responseData.append(QString("Content-Length: %1\r\n").arg(in_bodyData.size()));
     }
     if(!hasDate)
     {
