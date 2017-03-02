@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
                 if(!authActive)
                 {
                     LSHttpdHeaderPair auth;
-                    nonceId == QUuid::createUuid();
+                    nonceId = QUuid::createUuid();
                     auth.first = "WWW-Authenticate";
                     auth.second = "Digest realm=\"UniBaseDaemon\",nonce=\""+nonceId.toByteArray().toBase64()+"\"";
                     list.append(auth);

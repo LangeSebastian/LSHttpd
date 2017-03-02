@@ -10,12 +10,20 @@ CONFIG -= app_bundle
 TEMPLATE = app
 
 CONFIG(debug, debug|release){
-    DESTDIR = ../debug
+    macx {
+        DESTDIR = $$OUT_PWD/..
+    } else {
+        DESTDIR = $$OUT_PWD/../debug
+    }
     LIBS += -L$$DESTDIR -llshttpdd
 }
 
 CONFIG(release, debug|release){
-    DESTDIR = ../release
+    macx {
+        DESTDIR = $$OUT_PWD/..
+    } else {
+        DESTDIR = $$OUT_PWD/../release
+    }
     LIBS += -L$$DESTDIR -llshttpd
 }
 
