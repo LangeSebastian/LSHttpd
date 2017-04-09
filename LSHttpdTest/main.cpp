@@ -124,6 +124,19 @@ int main(int argc, char *argv[])
         request->sendResponse();
     });
 
+    auto resStat = h->registerResource(QRegularExpression("^/mode$"));
+    QObject::connect(resStat.data(),&LSHttpdResource::pendingRequest,[=](LSHttpdRequest* request){
+        QJsonObject o;
+        o.insert("method",request->method(request->methodId()));
+        o.insert("remotehost", request->remoteHost().toString());
 
+        QByteArray body;
+        body.append(QJsonDocument(o).toJson());
+        QList<LSHttpdHeaderPair> list;
+        list.append(LSHttpdHeaderPair("Content-Length",QString::number(body.size())));
+
+        request->createResponse(LSHttpdRequest::OK,list,body);
+        request->sendResponse();
+    });
     return a.exec();
 }

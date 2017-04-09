@@ -905,6 +905,15 @@ LSHttpdRequestPrivate::~LSHttpdRequestPrivate()
     closeSocket();
 }
 
+QHostAddress LSHttpdRequestPrivate::remoteHost()
+{
+    if (!m_socket.isNull())
+    {
+        return m_socket->peerAddress();
+    }
+    return QHostAddress();
+}
+
 http_parser *LSHttpdRequestPrivate::requestParser()
 {
     return &m_requestParser;

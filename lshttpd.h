@@ -123,6 +123,9 @@ public:
     QString method(LSHttpdRequest::RequestMethod key) const;
     RequestMethod methodId() const;
 
+    //RemoteHost
+    QHostAddress remoteHost() const;
+
     //Status Code Response
     int responseCode() const;
 

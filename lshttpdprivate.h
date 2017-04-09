@@ -101,6 +101,8 @@ public:
     //LSHttpdRequestPrivate(LSHttpdRequest *ptr, QSslSocket* socket);
     ~LSHttpdRequestPrivate();
 
+    QHostAddress remoteHost();
+
     http_parser* requestParser();
     http_parser_settings* requestParserSettings();
 

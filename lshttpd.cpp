@@ -104,6 +104,11 @@ LSHttpdRequest::RequestMethod LSHttpdRequest::methodId() const
     return m_methodId;
 }
 
+QHostAddress LSHttpdRequest::remoteHost() const
+{
+    return d_ptr->remoteHost();
+}
+
 int LSHttpdRequest::responseCode() const
 {
     return m_responseCode;

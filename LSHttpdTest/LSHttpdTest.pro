@@ -11,7 +11,8 @@ TEMPLATE = app
 
 CONFIG(debug, debug|release){
     macx {
-        DESTDIR = $$OUT_PWD/..
+        DESTDIR = $$OUT_PWD
+        LIBS += -L$$OUT_PWD/..
     } else {
         DESTDIR = $$OUT_PWD/../debug
     }
@@ -20,7 +21,8 @@ CONFIG(debug, debug|release){
 
 CONFIG(release, debug|release){
     macx {
-        DESTDIR = $$OUT_PWD/..
+        DESTDIR = $$OUT_PWD
+        LIBS += -L$$OUT_PWD/..
     } else {
         DESTDIR = $$OUT_PWD/../release
     }
